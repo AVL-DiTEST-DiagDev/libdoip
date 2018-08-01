@@ -19,7 +19,7 @@ install:
     - sudo cmake CMakeLists.txt
     - sudo make
     - sudo cp libgtest.a /usr/lib
-    - sudo cp libgtest_main. a /usr/lib
+    - sudo cp libgtest_main.a /usr/lib
 
     # install newer compiler and set symlink to g++ version 4.9
     - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.9; fi
