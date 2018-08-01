@@ -5,6 +5,9 @@ compiler:
 
 before_install:
 
+    # save project dir in environment variable
+    - PROJECT_DIR=$(pwd)
+
     # add toolchain repository (for g++ update)
     - if [ "$CXX" == "g++" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
     - sudo apt-get update -qq
@@ -30,8 +33,9 @@ install:
     - $CXX --version
     - g++ --version
 
-befor_script:
-    - cd /tests
+before_script:
+    #change to test folder
+    - cd PROJECT_DIR/tests
 
 script:
     - g++ -o testRun dummyTest.cpp -g -L/usr/lib/ -lgtest -lgtest_main -lpthread
