@@ -22,7 +22,7 @@ using namespace std;
 
 TEST(DummyTest, dummy)
 {
-    int i = 5;
+    int i = 6;
     
     EXPECT_EQ(5, i);
 }
