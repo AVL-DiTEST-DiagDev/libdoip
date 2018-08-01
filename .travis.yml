@@ -35,8 +35,7 @@ install:
 
 before_script:
     #change to test folder
-    - cd PROJECT_DIR
-    - cd /tests
+    - cd libdoip/tests
 
 script:
     - g++ -o testRun dummyTest.cpp -g -L/usr/lib/ -lgtest -lgtest_main -lpthread
