@@ -64,8 +64,8 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
  */
 unsigned char* createGenericHeader(PayloadType type, uint32_t length) {
     unsigned char *header = new unsigned char[8 + length];
-    header[0] = 0x01;
-    header[1] = 0xFE;
+    header[0] = 0x02;
+    header[1] = 0xFD;
     switch(type) {
         case PayloadType::ROUTINGACTIVATIONRESPONSE: {
             header[2] = 0x00;
