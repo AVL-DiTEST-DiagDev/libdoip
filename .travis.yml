@@ -10,6 +10,9 @@ before_install:
     - sudo apt-get update -qq
 
 install:
+    #install cmake
+    - sudo apt-get install cmake
+
     #install gtest
     - sudo apt-get install libgtest-dev
     - cd /usr/src/gtest
