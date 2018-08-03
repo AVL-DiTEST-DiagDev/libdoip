@@ -29,6 +29,8 @@ class DoIPClient{
         void sendRoutingActivationRequest();
         void receiveRoutingActivationResponse();
         void closeTcpConnection();
+	int getSockFd();
+	int getConnected();
 };
 
 

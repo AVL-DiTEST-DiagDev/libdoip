@@ -5,7 +5,6 @@ class DoIPClient_Test : public ::testing::Test{
    
     protected:
         void SetUp() override {
-            client1.startTcpConnection();
         }
     
     DoIPClient client1;   
@@ -16,7 +15,7 @@ class DoIPClient_Test : public ::testing::Test{
  */
 TEST_F(DoIPClient_Test,VerifyTcpConnectionState){
         
-    ASSERT_GE(client1._sockFd,0);
-    EXPECT_GE(client1._connected,0);       
+    ASSERT_GE(client1.getSockFd(),0);
+    EXPECT_GE(client1.getConnected(),0);       
 } 
 

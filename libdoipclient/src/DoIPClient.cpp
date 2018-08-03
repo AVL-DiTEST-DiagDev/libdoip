@@ -96,3 +96,17 @@ void DoIPClient::receiveRoutingActivationResponse() {
        cout<<(int)_receivedData[i]<<endl;
     }    
 }
+
+/*
+* Getter for _sockFD
+*/
+int DoIPClient::getSockFd() {
+	return _sockFd;
+}
+
+/*
+* Getter for _connected
+*/
+int DoIPClient::getConnected() {
+	
+}
