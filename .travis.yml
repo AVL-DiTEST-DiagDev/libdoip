@@ -39,4 +39,4 @@ before_script:
     
 script:
     - make
-	- ./runTest --gtest_output="xml:./testOutput.xml"
+    - ./runTest --gtest_output="xml:./testOutput.xml"
