@@ -59,18 +59,38 @@ void DoIPServer::receiveMessage() {
                     //start routing activation handler with the received message
                     unsigned char result = parseRoutingActivation(data);
                     unsigned char clientAddress [2] = {data[8], data[9]};
-                    //clientAddress[0] = data[8];
-                    //clientAddress[1] = data[9];
                     
                     unsigned char* message = createRoutingActivationResponse(clientAddress, result);
                     sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
                     
                     if(result == 0x00 || result == 0x06) {
                         closeSocket();
-                    }
+                    } else {
+						//Routing Activation Request was successfull, save source address
+						sourceAddress = new unsigned char[2];
+						sourceAddress[0] = data[8];
+						sourceAddress[1] = data[9];
+					}
                     
                     break;
                 }
+					
+				case PayloadType::DIAGNOSTICMESSAGE: {
+					unsigned char result = parseDiagnosticMessage(sourceAddress, data);
+					PayloadType resultType; 
+					if(result == 0x00) {
+						resultType = PayloadType::DIAGNOSTICPOSITIVEACK;
+					} else {
+						resultType = PayloadType::DIAGNOSTICNEGATIVEACK;	
+					}
+					
+					unsigned char data_TA [2] = { data[8], data[9] };
+					unsigned char data_SA [2] = { data[10], data[11] };
+					
+					unsigned char* message = createDiagnosticACK(resultType, data_SA, data_TA, result);
+					sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
+					break;	
+				}
             }    
         } 
     } 

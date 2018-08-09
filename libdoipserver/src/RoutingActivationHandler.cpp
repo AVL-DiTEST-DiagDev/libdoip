@@ -74,6 +74,11 @@ unsigned char* createRoutingActivationResponse(unsigned char clientAddress[2],
     return message;
 }
 
+/**
+ * Checks if the submitted address is valid
+ * @param address	the address which will be checked
+ * @return			true if address is valid
+ */
 bool checkSourceAddress(uint32_t address) {
     uint32_t minAddress = 3584;  // 0x0E00
     uint32_t maxAddress = 4095;     // 0x0FFF
