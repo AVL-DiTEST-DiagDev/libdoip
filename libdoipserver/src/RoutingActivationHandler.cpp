@@ -1,5 +1,4 @@
 #include "RoutingActivationHandler.h"
-#include <iostream>
 
 /**
  * Checks if the Routing Activation Request is valid

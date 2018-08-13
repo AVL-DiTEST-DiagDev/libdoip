@@ -15,12 +15,18 @@
 const int _ServerPort = 13400;
 const int _MaxDataSize = 64;
 
+typedef void (*DiagnosticCallback)(unsigned char*, int);
+
 class DoIPServer {
     public:
+	DoIPServer(DiagnosticCallback diag_callback): diag_callback{diag_callback} { };
+	void receiveFromApplication(unsigned char* value, int length);
+	const DiagnosticCallback diag_callback;
+
         unsigned char data[_MaxDataSize];
         int sockfd_receiver, sockfd_sender;
         struct sockaddr_in serverAdress;
-		unsigned char* sourceAddress;
+	unsigned char* sourceAddress;
 	
         void setupSocket();
         void receiveMessage();

@@ -1,5 +1,4 @@
 #include "DoIPGenericHeaderHandler.h"
-#include <iostream>
 
 /**
  * Checks if the received Generic Header is valid
