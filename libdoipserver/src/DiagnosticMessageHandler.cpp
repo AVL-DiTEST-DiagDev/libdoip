@@ -54,3 +54,29 @@ unsigned char* createDiagnosticACK(PayloadType type, unsigned char sourceAddress
 	
 	return message;
 }
+
+/**
+ * Creates a complete diagnostic message
+ * @param sourceAddress		logical address of the sender of a diagnostic message
+ * @param targetAddress		logical address of the receiver of a diagnostic message
+ * @param userData			actual diagnostic data
+ * @param userDataLength	length of diagnostic data
+ */
+unsigned char* createDiagnosticMessage(unsigned char sourceAddress [2], unsigned char targetAddress [2], unsigned char* userData, int userDataLength) {
+	unsigned char* message = createGenericHeader(PayloadType::DIAGNOSTICMESSAGE, _DiagnosticMessageMinimumLength + userDataLength);
+	
+	//add source address to the message
+	message[8] = sourceAddress[0];
+	message[9] = sourceAddress[1];
+	
+	//add target address to the message
+	message[10] = targetAddress[0];
+	message[11] = targetAddress[1];
+	
+	//add userdata to the message
+	for(int i = 0; i < userDataLength; i++) {
+		message[12 + i] = userData[i];	
+	}
+	
+	return message;
+}

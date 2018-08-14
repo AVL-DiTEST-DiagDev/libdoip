@@ -86,6 +86,12 @@ unsigned char* createGenericHeader(PayloadType type, uint32_t length) {
             header[3] = 0x00;
             break;
         }
+		case PayloadType::DIAGNOSTICMESSAGE: {
+			header[2] = 0x80;
+			header[3] = 0x01;
+			break;
+		}
+			
 		case PayloadType::DIAGNOSTICPOSITIVEACK: {
 			header[2] = 0x80;
 			header[3] = 0x02;

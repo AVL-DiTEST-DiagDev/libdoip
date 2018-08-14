@@ -31,7 +31,7 @@ void DoIPServer::closeSocket() {
  * Receives a message from the client and determine how to process the message
  */
 void DoIPServer::receiveMessage() {
-    std::cout << "DoIP receiving " << std::endl;
+    std::cout << "DoIP receiving.." << std::endl;
     sleep(1);
     int readedBytes;
     readedBytes = recv(sockfd_sender, data, _MaxDataSize, 0);
@@ -65,17 +65,17 @@ void DoIPServer::receiveMessage() {
                 if(result == 0x00 || result == 0x06) {
                     closeSocket();
                 } else {
-					//Routing Activation Request was successfull, save source address
-					sourceAddress = new unsigned char[2];
-					sourceAddress[0] = data[8];
-					sourceAddress[1] = data[9];
+					//Routing Activation Request was successfull, save address of the client
+					routedClientAddress = new unsigned char[2];
+					routedClientAddress[0] = data[8];
+					routedClientAddress[1] = data[9];
 				}
                 
                 break;
             }
 				
 			case PayloadType::DIAGNOSTICMESSAGE: {
-				unsigned char result = parseDiagnosticMessage(sourceAddress, data);
+				unsigned char result = parseDiagnosticMessage(routedClientAddress, data);
 				PayloadType resultType; 
 				if(result == 0x00) {
 					resultType = PayloadType::DIAGNOSTICPOSITIVEACK;
@@ -109,16 +109,30 @@ void DoIPServer::receiveMessage() {
  * @param messageLength     length of the complete message
  */
 void DoIPServer::sendMessage(unsigned char* message, int messageLength) {
+    std::cout << "DoIPServer sends message with: " << messageLength << " bytes." << std::endl;
     write(sockfd_sender, message, messageLength);
 }
 
+/*
+ * Receive diagnostic message payload from the server application, which will be sended back to the client
+ * @param value     received payload
+ * @param length    length of received payload
+ */
+void DoIPServer::receiveDiagnosticPayload(unsigned char* value, int length) {
 
-void DoIPServer::receiveFromApplication(unsigned char* value, int length) {
-    printf("DoiPServer received: ");
+    printf("DoiPServer received from server application: ");
     for(int i = 0; i < length; i++) {
         printf("0x%x ", value[i]);    
     }
     printf("\n");
+    
+    //sourceAddress = address of the doip server
+    unsigned char doipAddress [2] = { 0xE0, 0x00 };     //TODO: remove hardcoded values
+    
+    //targetAddress = address of the test client, which is already routed
+    unsigned char* message = createDiagnosticMessage(doipAddress, routedClientAddress, value, length);
+    
+    sendMessage(message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + length);
 }
 
 
