@@ -2,6 +2,8 @@
 #include <iostream>
 using namespace std;
 
+
+
 /**
  * Checks if the received Generic Header is valid
  * @param data          message which was received
@@ -24,25 +26,23 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
     }
     
     //Check Payload Type
-    //Value of RoutingActivationRequest = 0x0005
-    if(data[2] == 0x00 && data[3] == 0x05) {
-        action.type = PayloadType::ROUTINGACTIVATIONREQUEST;
+    if(data[2] == 0x00 && data[3] == 0x05) {			////RoutingActivationRequest = 0x0005
+        action.type = PayloadType::ROUTINGACTIVATIONREQUEST
     } 
      //Value of Vehicle Identification Request = 0x0001
     else if(data[2] == 0x00 && data[3] == 0x01) {
         action.type = PayloadType::VEHICLEIDENTREQUEST;
     }
-    else {
+    else if(data[2] == 0x80 && data[3] == 0x001) {	//Diagnose Message = 0x8001
+		action.type = PayloadType::DIAGNOSTICMESSAGE;
+	  } 
+  else {
         //Unknown Payload Type --> Send Generic DoIP Header NACK
         action.type = PayloadType::NEGATIVEACK;
         action.value = 0x01;
         return action;
     }
-    
    
-    
-    
-    
     //Check if the message length exceeds the maximum processable length
     if(dataLenght > 64) {
         action.type = PayloadType::NEGATIVEACK;
@@ -63,13 +63,23 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
             }
             break;
         }
+
         case PayloadType::VEHICLEIDENTREQUEST: { //PayloadTypeLength = 0
             if(dataLenght - _GenericHeaderLength != 0) {
                 action.type = PayloadType::NEGATIVEACK;
                 action.value = 0x04;
                 return action;
             }
-        }
+            break;
+        }	
+		    case PayloadType::DIAGNOSTICMESSAGE: {
+			      if(dataLenght - _GenericHeaderLength <= 4) {
+				        action.type = PayloadType::NEGATIVEACK;
+				        action.value = 0x04;
+				        return action;
+			      }
+			      break;	
+		    }
     }
     
     return action;
@@ -96,10 +106,28 @@ unsigned char* createGenericHeader(PayloadType type, uint32_t length) {
             header[3] = 0x00;
             break;
         }
+
         case PayloadType::VEHICLEIDENTRESPONSE:{
             header[2] = 0x00;
             header[3] = 0x04;
         }
+
+		case PayloadType::DIAGNOSTICMESSAGE: {
+			header[2] = 0x80;
+			header[3] = 0x01;
+			break;
+		}
+			
+		case PayloadType::DIAGNOSTICPOSITIVEACK: {
+			header[2] = 0x80;
+			header[3] = 0x02;
+			break;
+		}
+		case PayloadType::DIAGNOSTICNEGATIVEACK: {
+			header[2] = 0x80;
+			header[3] = 0x03;
+			break;
+		}
     }
     
     header[4] = (length >> 24) & 0xFF;

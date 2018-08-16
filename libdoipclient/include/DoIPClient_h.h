@@ -4,11 +4,11 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <unistd.h>
-#include <string.h>
 #include <cstddef>
 #include <stdlib.h>
 #include <cstdlib>
-#include <gtest/gtest.h>
+
+#include "DiagnosticMessageHandler.h"
 
 using namespace std;
 
@@ -41,8 +41,11 @@ class DoIPClient{
         void sendVehicleIdentificationRequest(const char* address);
         void receiveRoutingActivationResponse();
         void receiveUdpMessage();
+        void receiveMessage();
+	      void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
         void closeTcpConnection();
         void closeUdpConnection();
+  
 	int getSockFd();
 	int getConnected();
 };
