@@ -1,5 +1,6 @@
 #include "DoIPGenericHeaderHandler.h"
 #include <iostream>
+using namespace std;
 
 /**
  * Checks if the received Generic Header is valid
@@ -9,6 +10,8 @@
  *                      payload type and a byte for further message processing
  */
 GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
+    
+    
     
     GenericHeaderAction action;
     
@@ -24,12 +27,21 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
     //Value of RoutingActivationRequest = 0x0005
     if(data[2] == 0x00 && data[3] == 0x05) {
         action.type = PayloadType::ROUTINGACTIVATIONREQUEST;
-    } else {
+    } 
+     //Value of Vehicle Identification Request = 0x0001
+    else if(data[2] == 0x00 && data[3] == 0x01) {
+        action.type = PayloadType::VEHICLEIDENTREQUEST;
+    }
+    else {
         //Unknown Payload Type --> Send Generic DoIP Header NACK
         action.type = PayloadType::NEGATIVEACK;
         action.value = 0x01;
         return action;
     }
+    
+   
+    
+    
     
     //Check if the message length exceeds the maximum processable length
     if(dataLenght > 64) {
@@ -50,6 +62,13 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
                 return action;
             }
             break;
+        }
+        case PayloadType::VEHICLEIDENTREQUEST: { //PayloadTypeLength = 0
+            if(dataLenght - _GenericHeaderLength != 0) {
+                action.type = PayloadType::NEGATIVEACK;
+                action.value = 0x04;
+                return action;
+            }
         }
     }
     
@@ -76,6 +95,10 @@ unsigned char* createGenericHeader(PayloadType type, uint32_t length) {
             header[2] = 0x00;
             header[3] = 0x00;
             break;
+        }
+        case PayloadType::VEHICLEIDENTRESPONSE:{
+            header[2] = 0x00;
+            header[3] = 0x04;
         }
     }
     

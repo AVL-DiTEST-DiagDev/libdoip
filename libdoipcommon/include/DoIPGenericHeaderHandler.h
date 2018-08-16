@@ -6,10 +6,13 @@
 const int _GenericHeaderLength = 8;
 const int _NACKLength = 1;
 
+
 enum PayloadType { 
     NEGATIVEACK,
     ROUTINGACTIVATIONREQUEST,
     ROUTINGACTIVATIONRESPONSE,
+    VEHICLEIDENTREQUEST,
+    VEHICLEIDENTRESPONSE
 };
 
 struct GenericHeaderAction {
