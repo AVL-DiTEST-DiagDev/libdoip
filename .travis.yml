@@ -1,0 +1,42 @@
+language: cpp
+
+compiler:
+    - g++
+
+before_install:
+
+    # save project dir in environment variable
+    - PROJECT_DIR=$(pwd)
+
+    # add toolchain repository (for g++ update)
+    - if [ "$CXX" == "g++" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+    - sudo apt-get update -qq
+
+install:
+    #install cmake
+    - sudo apt-get install cmake
+
+    #install gtest
+    - sudo apt-get install libgtest-dev
+    - cd /usr/src/gtest
+    - sudo cmake CMakeLists.txt
+    - sudo make
+    - sudo cp libgtest.a /usr/lib
+    - sudo cp libgtest_main.a /usr/lib
+
+    # install newer compiler and set symlink to g++ version 8
+    - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-8; fi
+    - if [ "$CXX" = "g++" ]; then export CXX="g++-8"; fi
+    - sudo ln -sf /usr/bin/g++-8 /usr/bin/g++
+
+    # check g++ version
+    - $CXX --version
+    - g++ --version
+
+before_script:
+    #change to root
+    - cd $PROJECT_DIR
+    
+script:
+    - make
+    - ./runTest --gtest_output="xml:./testOutput.xml"
