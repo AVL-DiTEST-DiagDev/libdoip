@@ -111,6 +111,10 @@ void DoIPServer::receiveMessage() {
                 
 				break;	
 			}
+			default: {
+				std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
+				break;	
+			}
         }    
     } 
 }
@@ -153,9 +157,12 @@ void DoIPServer::receiveUdpMessage(){
                      
                      break; 
                 }
-                      
+                 
                      
-                      
+				default: { 
+					std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
+					break; 
+				}
                 
               }
              
