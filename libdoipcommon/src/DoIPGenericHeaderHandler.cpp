@@ -27,7 +27,7 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
     
     //Check Payload Type
     if(data[2] == 0x00 && data[3] == 0x05) {			////RoutingActivationRequest = 0x0005
-        action.type = PayloadType::ROUTINGACTIVATIONREQUEST
+        action.type = PayloadType::ROUTINGACTIVATIONREQUEST;
     } 
      //Value of Vehicle Identification Request = 0x0001
     else if(data[2] == 0x00 && data[3] == 0x01) {
