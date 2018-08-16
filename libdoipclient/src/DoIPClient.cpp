@@ -1,4 +1,3 @@
-
 #include "DoIPClient_h.h"
 
 /*
@@ -83,18 +82,28 @@ void DoIPClient::sendRoutingActivationRequest() {
   
 }
 
+void DoIPClient::sendDiagnosticMessage(unsigned char* userData, int userDataLength) {
+	unsigned char sourceAddress [2] = {0x0E,0x00};
+	unsigned char targetAddress [2] = {0xE0,0x00};
+	unsigned char* message = createDiagnosticMessage(sourceAddress, targetAddress, userData, userDataLength);
+	
+	write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);
+}
+
 /*
- * Receive a routing-activation-response from server
+ * Receive a message from server
  */
-void DoIPClient::receiveRoutingActivationResponse() {
+void DoIPClient::receiveMessage() {
     
     int readedBytes;
     readedBytes= read(_sockFd,_receivedData,_maxDataSize);
-  
-   for(int i=0;i<readedBytes;i++)
+	
+	printf("Client received: ");
+   	for(int i=0;i<readedBytes;i++)
     {
-       cout<<(int)_receivedData[i]<<endl;
+    	printf("0x%x ", _receivedData[i]);
     }    
+	printf("\n");	
 }
 
 /*
