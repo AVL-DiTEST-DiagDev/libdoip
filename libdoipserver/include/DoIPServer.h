@@ -22,9 +22,6 @@
 #include "RoutingActivationHandler.h"
 #include "DiagnosticMessageHandler.h"
 
-
-using namespace std;
-
 const int _ServerPort = 13400;
 const int _MaxDataSize = 64;   
 

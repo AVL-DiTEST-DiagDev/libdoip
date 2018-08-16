@@ -97,14 +97,9 @@ const pair<int,unsigned char*>* DoIPClient::buildRoutingActivationRequest() {
  * Send the builded request over the tcp-connection to server
  */
 void DoIPClient::sendRoutingActivationRequest() {
-    
-    
+        
     const pair <int,unsigned char*>* rareqWithLength=buildRoutingActivationRequest();
-    int sendedBytes;
-    sendedBytes=write(_sockFd,rareqWithLength->second,rareqWithLength->first);
-  
-   
-    
+    write(_sockFd,rareqWithLength->second,rareqWithLength->first);    
 }
 
 void DoIPClient::sendDiagnosticMessage(unsigned char* userData, int userDataLength) {
@@ -126,7 +121,7 @@ void DoIPClient::receiveMessage() {
 	printf("Client received: ");
    	for(int i=0;i<readedBytes;i++)
     {
-    	printf("0x%x ", _receivedData[i]);
+    	printf("0x%02X ", _receivedData[i]);
     }    
 	printf("\n");	
 }
@@ -180,8 +175,7 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
      inet_aton(ipAddr,&(_serverAddr.sin_addr));
     
     const pair <int,unsigned char*>* rareqWithLength=buildVehicleIdentificationRequest();
-    int sendedBytes;
-    sendedBytes=sendto(_sockFd, rareqWithLength->second,rareqWithLength->first, 0, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr));
+    sendto(_sockFd, rareqWithLength->second,rareqWithLength->first, 0, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr));
     
 }
 
@@ -196,7 +190,7 @@ int DoIPClient::getSockFd() {
 * Getter for _connected
 */
 int DoIPClient::getConnected() {
-	
+	return _connected;
 }
 
 void DoIPClient::parseVIResponseInformation(unsigned char* data){
