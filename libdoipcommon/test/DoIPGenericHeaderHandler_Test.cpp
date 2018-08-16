@@ -56,6 +56,42 @@ TEST_F(GenericHeaderTest, UnknownPayloadType) {
 }
 
 /*
+* Checks if a known payload type in the request leads to the correct payload type in action
+* Checks Routing Activation Request type
+*/
+TEST_F(GenericHeaderTest, KnownPayloadType_RoutingActivationRequest) {
+	GenericHeaderAction action = parseGenericHeader(request, 15);
+	ASSERT_EQ(action.type, PayloadType::ROUTINGACTIVATIONREQUEST);
+}
+
+/*
+* Checks if a known payload type in the request leads to the correct payload type in action
+* Checks Vehicle Identification Request type
+*/
+TEST_F(GenericHeaderTest, KnownPayloadType_VehicleIdentificationRequest) {
+	//change payload type
+	request[2] = 0x00;
+	request[3] = 0x01;
+	
+	//change payload length
+	request[7] = 0x00;
+	
+	GenericHeaderAction action = parseGenericHeader(request, 8);	//VehidleIdentificationRequest length only 8
+	ASSERT_EQ(action.type, PayloadType::VEHICLEIDENTREQUEST);
+}
+
+/*
+* Checks if a known payload type in the request leads to the correct payload type in action
+* Checks Diagnostic Message type
+*/
+TEST_F(GenericHeaderTest, KnownPayloadType_DiagnosticMessage) {
+	request[2] = 0x80;
+	request[3] = 0x01;
+	GenericHeaderAction action = parseGenericHeader(request, 15);
+	ASSERT_EQ(action.type, PayloadType::DIAGNOSTICMESSAGE);
+}
+
+/*
 * Checks if a too long message returns the correct response type and NACK code (0x02)
 */
 TEST_F(GenericHeaderTest, MessageLength) {
