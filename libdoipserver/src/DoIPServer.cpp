@@ -21,13 +21,16 @@ void DoIPServer::setupSocket() {
 
 void DoIPServer::setupUdpSocket(){
     
-    sockfd_receiver = socket(AF_INET, SOCK_DGRAM, 0);
+    sockfd_receiver_udp = socket(AF_INET, SOCK_DGRAM, 0);
     serverAdress.sin_family = AF_INET;
     serverAdress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAdress.sin_port = htons(_ServerPort);
     
+    if(sockfd_receiver_udp >= 0)
+        std::cout << "UDP Socket angelegt" << std::endl;
+    
     //binds the socket to the address and port number
-    bind(sockfd_receiver, (struct sockaddr *)&serverAdress, sizeof(serverAdress)); 
+    bind(sockfd_receiver_udp, (struct sockaddr *)&serverAdress, sizeof(serverAdress)); 
     
 }
 
@@ -37,6 +40,10 @@ void DoIPServer::setupUdpSocket(){
 void DoIPServer::closeSocket() {
     close(sockfd_receiver);
     close(sockfd_sender);
+}
+
+void DoIPServer::closeUdpSocket() {
+    close(sockfd_receiver_udp);
 }
 
 /*
@@ -122,12 +129,15 @@ void DoIPServer::receiveMessage() {
 
 void DoIPServer::receiveUdpMessage(){
     
+    
     unsigned int length = sizeof(clientAdress);
+    
+    std::cout << "DoIP receiving.." << std::endl;
+    sleep(1);
+    
     int readedBytes;
     
-    while(true) {
-        
-        readedBytes = recvfrom(sockfd_receiver, data, _MaxDataSize, 0, (struct sockaddr *) &clientAdress, &length);
+    readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &clientAdress, &length);
         
         if(readedBytes > 0)
         {
@@ -153,20 +163,17 @@ void DoIPServer::receiveUdpMessage(){
                       
                     unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
                      
-                    sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);
-                    closeSocket();
-                     
+                    sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);   
+
                     break; 
                 }
                  
-                     
-                default: {
-                    std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
-                    break; 
-                }
-            }
-        }
-    }
+				        default: { 
+					          std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
+					          break; 
+				        }
+            }         
+      }
 }
 
 /**
@@ -181,7 +188,7 @@ void DoIPServer::sendMessage(unsigned char* message, int messageLength) {
 
 
 void DoIPServer::sendUdpMessage(unsigned char* message, int messageLength) {
-    sendto(sockfd_receiver, message, messageLength, 0, (struct sockaddr *)&clientAdress, sizeof(clientAdress));
+    sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAdress, sizeof(clientAdress));
     
 }
 

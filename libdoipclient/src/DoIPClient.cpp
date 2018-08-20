@@ -32,9 +32,9 @@ void DoIPClient::startTcpConnection() {
 void DoIPClient::startUdpConnection(){
     
     const char* ipAddr="127.0.0.1";
-    _sockFd= socket(AF_INET,SOCK_DGRAM, 0); 
+    _sockFd_udp= socket(AF_INET,SOCK_DGRAM, 0); 
     
-    if(_sockFd>= 0)
+    if(_sockFd_udp>= 0)
     {
         cout <<"Client-UDP-Socket wurde angelegt." <<endl;
         
@@ -51,8 +51,8 @@ void DoIPClient::closeTcpConnection(){
     close(_sockFd); 
 }
 
-void DoIPClient::closeUdpConnection(){  
-    close(_sockFd);
+void DoIPClient::closeUdpConnection(){
+    close(_sockFd_udp);
 }
 
 /*
@@ -127,7 +127,7 @@ void DoIPClient::receiveUdpMessage() {
     unsigned int length = sizeof(_serverAddr);
     
     int readedBytes;
-    readedBytes = recvfrom(_sockFd, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_serverAddr, &length);
+    readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_serverAddr, &length);
     
     for(int i=0;i<readedBytes;i++)
     {
@@ -166,13 +166,32 @@ const pair<int,unsigned char*>* DoIPClient::buildVehicleIdentificationRequest(){
 
 void DoIPClient::sendVehicleIdentificationRequest(const char* address){
     
-    const char* ipAddr= address;
+     const char* ipAddr= address;
      
-    inet_aton(ipAddr,&(_serverAddr.sin_addr));
+     inet_aton(ipAddr,&(_serverAddr.sin_addr));
+     
+     
+     if(strcmp(address, "255.255.255.255") == 0)
+     {
+         cout << "Bereite Limited Broadcast vor" << endl;
+         
+         
+         setsockopt(_sockFd_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
+         
+         if(setsockopt >= 0)
+         {
+             cout << "Setzen der Option erfolgreich" << endl;
+         }
+         
+     }
     
     const pair <int,unsigned char*>* rareqWithLength=buildVehicleIdentificationRequest();
-    sendto(_sockFd, rareqWithLength->second,rareqWithLength->first, 0, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr));
+    sendto(_sockFd_udp, rareqWithLength->second,rareqWithLength->first, 0, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr));
     
+    if(sendto >= 0)
+    {
+        cout << "Sende VIRequest" << endl;
+    }
 }
 
 /*
@@ -226,4 +245,45 @@ void DoIPClient::parseVIResponseInformation(unsigned char* data){
     //FurtherActionRequest
     FurtherActionReqResult = data[39];
     
+}
+
+void DoIPClient::displayVIResponseInformation()
+{
+    //output VIN
+    cout << "VIN: ";
+    for(int i = 0; i < 17 ;i++)
+    {
+        cout << (unsigned char)(int)VINResult[i];
+    }
+    cout << endl;
+    
+    //output LogicalAddress
+    cout << "LogicalAddress: ";
+    for(int i = 0; i < 2; i++)
+    {
+        printf("%X", (int)LogicalAddressResult[i]);
+    }
+    cout << endl;
+    
+    //output EID
+    cout << "EID: ";
+    for(int i = 0; i < 6; i++)
+    {
+        printf("%X", (int)EIDResult[i]);
+    }
+    cout << endl;
+    
+     //output GID
+    cout << "GID: ";
+    for(int i = 0; i < 6; i++)
+    {
+        printf("%X", (int)GIDResult[i]);
+    }
+    cout << endl;
+    
+    //output FurtherActionRequest
+    cout << "FurtherActionRequest: ";
+    printf("%X", (int)FurtherActionReqResult);
+    
+    cout << endl;
 }
