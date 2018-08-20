@@ -11,8 +11,6 @@
 
 #include "DiagnosticMessageHandler.h"
 
-using namespace std;
-
 const int _serverPortNr=13400;
 const int _maxDataSize=64;
 
@@ -33,8 +31,8 @@ class DoIPClient{
     unsigned char FurtherActionReqResult;
     
     private:
-       const pair<int, unsigned char*>* buildRoutingActivationRequest();
-       const pair<int, unsigned char*>* buildVehicleIdentificationRequest();
+       const std::pair<int, unsigned char*>* buildRoutingActivationRequest();
+       const std::pair<int, unsigned char*>* buildVehicleIdentificationRequest();
        void parseVIResponseInformation(unsigned char* data);
        
     public:
@@ -45,7 +43,7 @@ class DoIPClient{
         void receiveRoutingActivationResponse();
         void receiveUdpMessage();
         void receiveMessage();
-	      void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
+	void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
         void displayVIResponseInformation();
         void closeTcpConnection();
         void closeUdpConnection();
