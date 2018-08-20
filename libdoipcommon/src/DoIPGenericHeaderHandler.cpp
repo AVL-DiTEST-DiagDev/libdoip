@@ -29,8 +29,7 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
     }
     else if(data[2] == 0x80 && data[3] == 0x01) {		//Value of Diagnose Message = 0x8001
 		action.type = PayloadType::DIAGNOSTICMESSAGE;
-	} 
-  	else {
+    } else {
         //Unknown Payload Type --> Send Generic DoIP Header NACK
         action.type = PayloadType::NEGATIVEACK;
         action.value = 0x01;
@@ -43,13 +42,13 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
         action.value = 0x02;
         return action;
     }
-    
+        
     //Check current DoIP protocol handler memory
     //DoIP-044 - Figure 7
     
     //Check Payload Type specific length
     switch(action.type) {
-		case PayloadType::ROUTINGACTIVATIONREQUEST: {
+        case PayloadType::ROUTINGACTIVATIONREQUEST: {
             if(dataLenght - _GenericHeaderLength != 7) {
                 action.type = PayloadType::NEGATIVEACK;
                 action.value = 0x04;
@@ -67,19 +66,19 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
             break;
         }
 
-		case PayloadType::DIAGNOSTICMESSAGE: {
-			if(dataLenght - _GenericHeaderLength <= 4) {
-				action.type = PayloadType::NEGATIVEACK;
-				action.value = 0x04;
-				return action;
-			}
-			break;	
-		}
-			
-		default: {
-			std::cerr << "not handled payload type occured in parseGenericHeader()" << std::endl;
-			break;	
-		}
+        case PayloadType::DIAGNOSTICMESSAGE: {
+            if(dataLenght - _GenericHeaderLength <= 4) {
+                action.type = PayloadType::NEGATIVEACK;
+                action.value = 0x04;
+                return action;
+            }
+            break;	
+        }
+
+        default: {
+            std::cerr << "not handled payload type occured in parseGenericHeader()" << std::endl;
+            break;	
+        }
     }
     
     return action;
@@ -111,31 +110,31 @@ unsigned char* createGenericHeader(PayloadType type, uint32_t length) {
         case PayloadType::VEHICLEIDENTRESPONSE:{
             header[2] = 0x00;
             header[3] = 0x04;
-			break;
+            break;
         }
 
-		case PayloadType::DIAGNOSTICMESSAGE: {
-			header[2] = 0x80;
-			header[3] = 0x01;
-			break;
-		}
-			
-		case PayloadType::DIAGNOSTICPOSITIVEACK: {
-			header[2] = 0x80;
-			header[3] = 0x02;
-			break;
-		}
-			
-		case PayloadType::DIAGNOSTICNEGATIVEACK: {
-			header[2] = 0x80;
-			header[3] = 0x03;
-			break;
-		}
-		
-		default: {
-			std::cerr << "not handled payload type occured in createGenericHeader()" << std::endl;
-			break;
-		}
+        case PayloadType::DIAGNOSTICMESSAGE: {
+            header[2] = 0x80;
+            header[3] = 0x01;
+            break;
+        }
+
+        case PayloadType::DIAGNOSTICPOSITIVEACK: {
+            header[2] = 0x80;
+            header[3] = 0x02;
+            break;
+        }
+
+        case PayloadType::DIAGNOSTICNEGATIVEACK: {
+            header[2] = 0x80;
+            header[3] = 0x03;
+            break;
+        }
+
+        default: {
+            std::cerr << "not handled payload type occured in createGenericHeader()" << std::endl;
+            break;
+        }
     }
     
     header[4] = (length >> 24) & 0xFF;

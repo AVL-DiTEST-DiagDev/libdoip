@@ -29,22 +29,23 @@ typedef void (*DiagnosticCallback)(unsigned char*, int);
 
 class DoIPServer {
   
-        char VIN [18] = "00000000000000000"; //17 chars VIN + /0 char
-        unsigned char LogicalAddress [2] = {0x00, 0x00};
-        unsigned char EID [6];
-        unsigned char GID [6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-        unsigned char FurtherActionReq = 0x00;
+    char VIN [18] = "00000000000000000"; //17 chars VIN + /0 char
+    unsigned char LogicalAddress [2] = {0x00, 0x00};
+    unsigned char EID [6];
+    unsigned char GID [6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    unsigned char FurtherActionReq = 0x00;
 
     public:
 	DoIPServer(DiagnosticCallback diag_callback): diag_callback{diag_callback} { };
-	void receiveDiagnosticPayload(unsigned char* value, int length);
-	const DiagnosticCallback diag_callback;
-
+        
+        const DiagnosticCallback diag_callback;
         unsigned char data[_MaxDataSize];
         int sockfd_receiver, sockfd_sender;
 
         struct sockaddr_in serverAdress, clientAdress;
-	      unsigned char* routedClientAddress;
+	unsigned char* routedClientAddress;
+              
+        void receiveDiagnosticPayload(unsigned char* value, int length);
         void setupSocket();
         void setupUdpSocket();
         void receiveMessage();
@@ -58,9 +59,7 @@ class DoIPServer {
         void setEID(const unsigned long inputEID);
         void setGID(const unsigned long inputGID);
         void setFAR(const unsigned int inputFAR);
-        
-   
-        
+
 };
 
         

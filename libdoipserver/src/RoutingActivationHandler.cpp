@@ -50,6 +50,7 @@ unsigned char parseRoutingActivation(unsigned char data[64]) {
  */
 unsigned char* createRoutingActivationResponse(unsigned char clientAddress[2],
                                                 unsigned char responseCode) {
+    
     unsigned char* message = createGenericHeader(PayloadType::ROUTINGACTIVATIONRESPONSE,
                                                     _ActivationResponseLength);
     

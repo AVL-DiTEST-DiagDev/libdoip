@@ -3,7 +3,6 @@
 /*
  *Set up the connection between client and server
  */
-
 void DoIPClient::startTcpConnection() {
 
     const char* ipAddr="127.0.0.1";
@@ -48,14 +47,11 @@ void DoIPClient::startUdpConnection(){
 /*
  * closes the client-socket
  */
-void DoIPClient::closeTcpConnection(){
-    
-    close(_sockFd);
-  
+void DoIPClient::closeTcpConnection(){  
+    close(_sockFd); 
 }
 
-void DoIPClient::closeUdpConnection(){
-    
+void DoIPClient::closeUdpConnection(){  
     close(_sockFd);
 }
 
@@ -103,11 +99,11 @@ void DoIPClient::sendRoutingActivationRequest() {
 }
 
 void DoIPClient::sendDiagnosticMessage(unsigned char* userData, int userDataLength) {
-	unsigned char sourceAddress [2] = {0x0E,0x00};
-	unsigned char targetAddress [2] = {0xE0,0x00};
-	unsigned char* message = createDiagnosticMessage(sourceAddress, targetAddress, userData, userDataLength);
-	
-	write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);
+    unsigned char sourceAddress [2] = {0x0E,0x00};
+    unsigned char targetAddress [2] = {0xE0,0x00};
+    unsigned char* message = createDiagnosticMessage(sourceAddress, targetAddress, userData, userDataLength);
+
+    write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);
 }
 
 /*
@@ -118,12 +114,12 @@ void DoIPClient::receiveMessage() {
     int readedBytes;
     readedBytes= read(_sockFd,_receivedData,_maxDataSize);
 	
-	printf("Client received: ");
-   	for(int i=0;i<readedBytes;i++)
+    printf("Client received: ");
+    for(int i = 0; i < readedBytes; i++)
     {
-    	printf("0x%02X ", _receivedData[i]);
+        printf("0x%02X ", _receivedData[i]);
     }    
-	printf("\n");	
+    printf("\n");	
 }
 
 void DoIPClient::receiveUdpMessage() {
@@ -147,32 +143,32 @@ void DoIPClient::receiveUdpMessage() {
 
 const pair<int,unsigned char*>* DoIPClient::buildVehicleIdentificationRequest(){
     
-   pair <int,unsigned char*>* rareqWithLength= new pair<int,unsigned char*>();
-   int rareqLength= 8;
-   unsigned char * rareq= new unsigned char[rareqLength];
-  
+    pair <int,unsigned char*>* rareqWithLength= new pair<int,unsigned char*>();
+    int rareqLength= 8;
+    unsigned char * rareq= new unsigned char[rareqLength];
+
     //Generic Header
-   rareq[0]=0x02;  //Protocol Version
-   rareq[1]=0xFD;  //Inverse Protocol Version
-   rareq[2]=0x00;  //Payload-Type
-   rareq[3]=0x01;
-   rareq[4]=0x00;  //Payload-Length
-   rareq[5]=0x00;  
-   rareq[6]=0x00;
-   rareq[7]=0x00;
-    
-   rareqWithLength->first=rareqLength;
-   rareqWithLength->second=rareq;
-  
-   return rareqWithLength;
+    rareq[0]=0x02;  //Protocol Version
+    rareq[1]=0xFD;  //Inverse Protocol Version
+    rareq[2]=0x00;  //Payload-Type
+    rareq[3]=0x01;
+    rareq[4]=0x00;  //Payload-Length
+    rareq[5]=0x00;  
+    rareq[6]=0x00;
+    rareq[7]=0x00;
+
+    rareqWithLength->first=rareqLength;
+    rareqWithLength->second=rareq;
+
+    return rareqWithLength;
     
 }
 
 void DoIPClient::sendVehicleIdentificationRequest(const char* address){
     
-     const char* ipAddr= address;
+    const char* ipAddr= address;
      
-     inet_aton(ipAddr,&(_serverAddr.sin_addr));
+    inet_aton(ipAddr,&(_serverAddr.sin_addr));
     
     const pair <int,unsigned char*>* rareqWithLength=buildVehicleIdentificationRequest();
     sendto(_sockFd, rareqWithLength->second,rareqWithLength->first, 0, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr));
@@ -183,14 +179,14 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
 * Getter for _sockFD
 */
 int DoIPClient::getSockFd() {
-	return _sockFd;
+    return _sockFd;
 }
 
 /*
 * Getter for _connected
 */
 int DoIPClient::getConnected() {
-	return _connected;
+    return _connected;
 }
 
 void DoIPClient::parseVIResponseInformation(unsigned char* data){
