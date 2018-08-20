@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <stdlib.h>
 #include <cstdlib>
+#include <cstring>
 
 #include "DiagnosticMessageHandler.h"
 
@@ -22,6 +23,8 @@ class DoIPClient{
     int _sockFd;
     int _connected;
     struct sockaddr_in _serverAddr; 
+    int _sockFd_udp; //SocketVariable for UDP
+    int broadcast = 1;
     
     unsigned char VINResult [17];
     unsigned char LogicalAddressResult [2];
@@ -42,7 +45,8 @@ class DoIPClient{
         void receiveRoutingActivationResponse();
         void receiveUdpMessage();
         void receiveMessage();
-	      void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
+	void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
+        void displayVIResponseInformation();
         void closeTcpConnection();
         void closeUdpConnection();
   
