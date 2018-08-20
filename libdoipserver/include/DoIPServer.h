@@ -42,6 +42,7 @@ class DoIPServer {
 
         unsigned char data[_MaxDataSize];
         int sockfd_receiver, sockfd_sender;
+        int sockfd_receiver_udp;
 
         struct sockaddr_in serverAdress, clientAdress;
 	      unsigned char* routedClientAddress;
@@ -52,6 +53,7 @@ class DoIPServer {
         void sendMessage(unsigned char* message, int messageLenght);
         void sendUdpMessage(unsigned char* message, int messageLength);
         void closeSocket();
+        void closeUdpSocket();
         void setEIDdefault();
         void setVIN(const char* VINString);
         void setLogicalAddress(const unsigned int inputLogAdd);
