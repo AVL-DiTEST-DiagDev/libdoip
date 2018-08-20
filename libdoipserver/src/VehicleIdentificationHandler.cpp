@@ -2,7 +2,9 @@
 #include <iostream>
 
 
-unsigned char* createVehicleIdentificationResponse(char* VIN,unsigned char* LogicalAddress,unsigned char* EID, unsigned char* GID, unsigned char FurtherActionReq)
+unsigned char* createVehicleIdentificationResponse(char* VIN,unsigned char* LogicalAddress, 
+                                                    unsigned char* EID, unsigned char* GID,
+                                                    unsigned char FurtherActionReq)
 {
     unsigned char* message = createGenericHeader(PayloadType::VEHICLEIDENTRESPONSE, _VIResponseLength);
     
@@ -42,7 +44,5 @@ unsigned char* createVehicleIdentificationResponse(char* VIN,unsigned char* Logi
     message[39] = FurtherActionReq;
     
     return message;
-    
-    
 }
 

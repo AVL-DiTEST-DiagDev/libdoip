@@ -84,29 +84,29 @@ void DoIPServer::receiveMessage() {
                 if(result == 0x00 || result == 0x06) {
                     closeSocket();
                 } else {
-					//Routing Activation Request was successfull, save address of the client
-					routedClientAddress = new unsigned char[2];
-					routedClientAddress[0] = data[8];
-					routedClientAddress[1] = data[9];
-				}
+                    //Routing Activation Request was successfull, save address of the client
+                    routedClientAddress = new unsigned char[2];
+                    routedClientAddress[0] = data[8];
+                    routedClientAddress[1] = data[9];
+                }
                 
                 break;
             }
 				
-			case PayloadType::DIAGNOSTICMESSAGE: {
-				unsigned char result = parseDiagnosticMessage(routedClientAddress, data);
-				PayloadType resultType; 
-				if(result == 0x00) {
-					resultType = PayloadType::DIAGNOSTICPOSITIVEACK;
-				} else {
-					resultType = PayloadType::DIAGNOSTICNEGATIVEACK;	
-				}
-				
-				unsigned char data_TA [2] = { data[8], data[9] };
-				unsigned char data_SA [2] = { data[10], data[11] };
-				
-				unsigned char* message = createDiagnosticACK(resultType, data_SA, data_TA, result);
-				sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
+            case PayloadType::DIAGNOSTICMESSAGE: {
+                unsigned char result = parseDiagnosticMessage(routedClientAddress, data);
+                PayloadType resultType; 
+                if(result == 0x00) {
+                    resultType = PayloadType::DIAGNOSTICPOSITIVEACK;
+                } else {
+                    resultType = PayloadType::DIAGNOSTICNEGATIVEACK;	
+                }
+
+                unsigned char data_TA [2] = { data[8], data[9] };
+                unsigned char data_SA [2] = { data[10], data[11] };
+
+                unsigned char* message = createDiagnosticACK(resultType, data_SA, data_TA, result);
+                sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
                 
                 //send received user data to server application
                 unsigned char * cb_message = new unsigned char[3];
@@ -116,12 +116,13 @@ void DoIPServer::receiveMessage() {
                 
                 diag_callback(cb_message, 3);
                 
-				break;	
-			}
-			default: {
-				std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
-				break;	
-			}
+		break;	
+            }
+            
+            default: {
+                std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
+                break;	
+            }
         }    
     } 
 }
@@ -136,21 +137,20 @@ void DoIPServer::receiveUdpMessage(){
     
     int readedBytes;
     
-        readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &clientAdress, &length);
+    readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &clientAdress, &length);
         
         if(readedBytes > 0)
         {
-            
-             GenericHeaderAction action = parseGenericHeader(data, readedBytes);
+            GenericHeaderAction action = parseGenericHeader(data, readedBytes);
              
-              switch(action.type) {
-                  
+            switch(action.type) {
+
                 case PayloadType::NEGATIVEACK: {
                     //send NACK
                     unsigned char* message = createGenericHeader(action.type, _NACKLength);
                     message[8] = action.value;
                     sendUdpMessage(message, _GenericHeaderLength + _NACKLength);
-                    
+
                     if(action.value == 0x00 || action.value == 0x04) {
                         closeSocket();
                     } else {
@@ -159,27 +159,21 @@ void DoIPServer::receiveUdpMessage(){
                     break;
                 }
                 
-                 case PayloadType::VEHICLEIDENTREQUEST: {
+                case PayloadType::VEHICLEIDENTREQUEST: {
                       
-                     unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
+                    unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
                      
-                     sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);
-                     
-                     
-                     break; 
+                    sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);   
+
+                    break; 
                 }
                  
-                     
-				default: { 
-					std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
-					break; 
-				}
-                
-              }
-             
-        }  
-    
-    
+				        default: { 
+					          std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
+					          break; 
+				        }
+            }         
+      }
 }
 
 /**

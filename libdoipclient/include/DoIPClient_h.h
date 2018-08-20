@@ -33,7 +33,7 @@ class DoIPClient{
     unsigned char FurtherActionReqResult;
     
     private:
-       const pair<int,unsigned char*>* buildRoutingActivationRequest();
+       const pair<int, unsigned char*>* buildRoutingActivationRequest();
        const pair<int, unsigned char*>* buildVehicleIdentificationRequest();
        void parseVIResponseInformation(unsigned char* data);
        
@@ -45,7 +45,7 @@ class DoIPClient{
         void receiveRoutingActivationResponse();
         void receiveUdpMessage();
         void receiveMessage();
-	void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
+	      void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
         void displayVIResponseInformation();
         void closeTcpConnection();
         void closeUdpConnection();
