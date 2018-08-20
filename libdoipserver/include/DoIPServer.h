@@ -2,19 +2,13 @@
 #define DOIPSERVER_H
 
 #include <iostream>
-#include <stdio.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
-#include <errno.h>
 #include <string.h>
-#include <fcntl.h>
 #include <net/if.h>
 #include <unistd.h>
-#include <cstddef>
-#include <cstring>
 #include "DoIPGenericHeaderHandler.h"
 #include "RoutingActivationHandler.h"
 #include "VehicleIdentificationHandler.h"
