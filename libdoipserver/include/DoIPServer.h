@@ -19,8 +19,6 @@
 const int _ServerPort = 13400;
 const int _MaxDataSize = 64;   
 
-typedef void (*DiagnosticCallback)(unsigned char*, int);
-
 class DoIPServer {
   
     char VIN [18] = "00000000000000000"; //17 chars VIN + /0 char

@@ -1,11 +1,15 @@
 #include "DiagnosticMessageHandler.h"
+#include <iostream>
 
 /**
  * Checks if a received Diagnostic Message is valid
+ * @param cb                    callback which will be called with the user data
  * @param sourceAddress		currently registered source address on the socket
  * @param data			message which was received
+ * @param diagMessageLength     length of the diagnostic message
  */
-unsigned char parseDiagnosticMessage(unsigned char sourceAddress [2], unsigned char data[64]) {
+unsigned char parseDiagnosticMessage(DiagnosticCallback cb, unsigned char sourceAddress [2],
+                                    unsigned char data[64], int diagMessageLength) {
     
     //Check if the received SA is registered on the socket
     if(data[8] != sourceAddress[0] || data[9] != sourceAddress[1]) {
@@ -25,6 +29,14 @@ unsigned char parseDiagnosticMessage(unsigned char sourceAddress [2], unsigned c
     //Check if TA is reachable/Routing to TA is already configured validy
 
     //Pass the diagnostic message to the target network/transport layer
+    int cb_message_length = diagMessageLength - _DiagnosticMessageMinimumLength;
+    unsigned char* cb_message = new unsigned char[cb_message_length];
+    
+    for(int i = _DiagnosticMessageMinimumLength; i < diagMessageLength; i++) {
+        cb_message[i - _DiagnosticMessageMinimumLength] = data[8+ i];
+    }
+    
+    cb(cb_message, cb_message_length);
 
     //return positive ack code
     return 0x00;

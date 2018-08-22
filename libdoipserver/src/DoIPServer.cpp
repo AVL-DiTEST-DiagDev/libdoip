@@ -50,8 +50,7 @@ void DoIPServer::closeUdpSocket() {
  * Receives a message from the client and determine how to process the message
  */
 void DoIPServer::receiveMessage() {
-    std::cout << "DoIP receiving.." << std::endl;
-    sleep(1);
+
     int readedBytes;
     readedBytes = recv(sockfd_sender, data, _MaxDataSize, 0);
 
@@ -94,7 +93,7 @@ void DoIPServer::receiveMessage() {
             }
 				
             case PayloadType::DIAGNOSTICMESSAGE: {
-                unsigned char result = parseDiagnosticMessage(routedClientAddress, data);
+                unsigned char result = parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
                 PayloadType resultType; 
                 if(result == 0x00) {
                     resultType = PayloadType::DIAGNOSTICPOSITIVEACK;
@@ -107,14 +106,6 @@ void DoIPServer::receiveMessage() {
 
                 unsigned char* message = createDiagnosticACK(resultType, data_SA, data_TA, result);
                 sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
-                
-                //send received user data to server application
-                unsigned char * cb_message = new unsigned char[3];
-                cb_message[0] = data[12];
-                cb_message[1] = data[13];
-                cb_message[2] = data[14];
-                
-                diag_callback(cb_message, 3);
                 
 		break;	
             }
@@ -168,10 +159,10 @@ void DoIPServer::receiveUdpMessage(){
                     break; 
                 }
                  
-				        default: { 
-					          std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
-					          break; 
-				        }
+                default: { 
+                    std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
+                    break; 
+                }
             }         
       }
 }
