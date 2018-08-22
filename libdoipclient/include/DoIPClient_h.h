@@ -11,20 +11,33 @@
 
 #include "DiagnosticMessageHandler.h"
 
-using namespace std;
-
 const int _serverPortNr=13400;
 const int _maxDataSize=64;
 
 
 class DoIPClient{
+    
+public:
+    void startTcpConnection();   
+    void startUdpConnection();
+    void sendRoutingActivationRequest();
+    void sendVehicleIdentificationRequest(const char* address);
+    void receiveRoutingActivationResponse();
+    void receiveUdpMessage();
+    void receiveMessage();
+    void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
+    void displayVIResponseInformation();
+    void closeTcpConnection();
+    void closeUdpConnection();
 
+    int getSockFd();
+    int getConnected();
+    
+private:
     unsigned char _receivedData[_maxDataSize];
-    int _sockFd;
-    int _connected;
-    struct sockaddr_in _serverAddr; 
-    int _sockFd_udp; //SocketVariable for UDP
+    int _sockFd, _sockFd_udp, _connected;
     int broadcast = 1;
+    struct sockaddr_in _serverAddr; 
     
     unsigned char VINResult [17];
     unsigned char LogicalAddressResult [2];
@@ -32,26 +45,9 @@ class DoIPClient{
     unsigned char GIDResult [6];
     unsigned char FurtherActionReqResult;
     
-    private:
-       const pair<int, unsigned char*>* buildRoutingActivationRequest();
-       const pair<int, unsigned char*>* buildVehicleIdentificationRequest();
-       void parseVIResponseInformation(unsigned char* data);
-       
-    public:
-        void startTcpConnection();   
-        void startUdpConnection();
-        void sendRoutingActivationRequest();
-        void sendVehicleIdentificationRequest(const char* address);
-        void receiveRoutingActivationResponse();
-        void receiveUdpMessage();
-        void receiveMessage();
-	      void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
-        void displayVIResponseInformation();
-        void closeTcpConnection();
-        void closeUdpConnection();
-  
-	int getSockFd();
-	int getConnected();
+    const std::pair<int, unsigned char*>* buildRoutingActivationRequest();
+    const std::pair<int, unsigned char*>* buildVehicleIdentificationRequest();
+    void parseVIResponseInformation(unsigned char* data);
 };
 
 
