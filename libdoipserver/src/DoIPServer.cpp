@@ -27,10 +27,15 @@ void DoIPServer::setupUdpSocket(){
     serverAddress.sin_port = htons(_ServerPort);
     
     if(sockfd_receiver_udp >= 0)
-        std::cout << "UDP Socket angelegt" << std::endl;
+        std::cout << "UDP Socket created successfully" << std::endl;
+    
+    
     
     //binds the socket to the address and port number
     bind(sockfd_receiver_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
+    
+    //setting the IP Address for Multicast
+    setMulticastGroup("224.0.0.2");
     
 }
 
@@ -124,7 +129,6 @@ void DoIPServer::receiveUdpMessage(){
     unsigned int length = sizeof(clientAddress);
     
     std::cout << "DoIP receiving.." << std::endl;
-    sleep(1);
     
     int readedBytes;
     
@@ -135,20 +139,6 @@ void DoIPServer::receiveUdpMessage(){
             GenericHeaderAction action = parseGenericHeader(data, readedBytes);
              
             switch(action.type) {
-
-                case PayloadType::NEGATIVEACK: {
-                    //send NACK
-                    unsigned char* message = createGenericHeader(action.type, _NACKLength);
-                    message[8] = action.value;
-                    sendUdpMessage(message, _GenericHeaderLength + _NACKLength);
-
-                    if(action.value == 0x00 || action.value == 0x04) {
-                        closeSocket();
-                    } else {
-                        //discard message when value 0x01, 0x02, 0x03
-                    }
-                    break;
-                }
                 
                 case PayloadType::VEHICLEIDENTREQUEST: {
                       
@@ -268,6 +258,33 @@ void DoIPServer::receiveDiagnosticPayload(unsigned char* value, int length) {
     sendMessage(message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + length);
 }
 
-
+void DoIPServer::setMulticastGroup(const char* address)
+{
+    
+    int loop = 1;
+    
+    //set Option using the same Port for multiple Sockets
+    int setPort = setsockopt(sockfd_receiver_udp, SOL_SOCKET, SO_REUSEADDR, &loop, sizeof(loop));
+    
+    if(setPort < 0)
+    {
+        std::cout << "Setting Port Error" << std::endl;
+    }
+    
+     
+    struct ip_mreq mreq;
+    
+    mreq.imr_multiaddr.s_addr = inet_addr(address);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    
+    //set Option to join Multicast Group
+    int setGroup = setsockopt(sockfd_receiver_udp, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq));
+    
+    if(setGroup < 0)
+    {
+        std::cout <<"Setting Address Error" << std::endl;
+    }
+    
+}
 
 
