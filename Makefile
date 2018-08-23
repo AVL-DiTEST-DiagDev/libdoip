@@ -1,6 +1,6 @@
 CXX = g++
 
-CPPFLAGS = -g -Wall -Wextra
+CPPFLAGS = -g -Wall -Wextra -std=c++11
 LDFLAGS = -shared
 TESTFLAGS = -g -L/usr/lib -lgtest -lgtest_main -lpthread
 
