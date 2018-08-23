@@ -3,7 +3,6 @@
 /*
  *Set up the connection between client and server
  */
-
 void DoIPClient::startTcpConnection() {
 
     const char* ipAddr="127.0.0.1";
@@ -12,7 +11,7 @@ void DoIPClient::startTcpConnection() {
     
     if(_sockFd>=0)
     {
-        cout<< "Client-Socket wurde angelegt." <<endl;
+        std::cout << "Client-Socket wurde angelegt." << std::endl;
     
         _serverAddr.sin_family=AF_INET;
         _serverAddr.sin_port=htons(_serverPortNr);
@@ -24,7 +23,7 @@ void DoIPClient::startTcpConnection() {
             if(_connected!=-1)
             {
                 connectedFlag=true;
-                cout<<"Die Verbindung zum Server wurde hergestellt"<<endl;
+                std::cout << "Die Verbindung zum Server wurde hergestellt" << std::endl;
             }
         }  
     }   
@@ -37,7 +36,7 @@ void DoIPClient::startUdpConnection(){
     
     if(_sockFd_udp>= 0)
     {
-        cout <<"Client-UDP-Socket wurde angelegt." <<endl;
+        std::cout << "Client-UDP-Socket wurde angelegt." << std::endl;
         
         _serverAddr.sin_family=AF_INET;
         _serverAddr.sin_port=htons(_serverPortNr);
@@ -48,23 +47,20 @@ void DoIPClient::startUdpConnection(){
 /*
  * closes the client-socket
  */
-void DoIPClient::closeTcpConnection(){
-    
-    close(_sockFd);
-  
+void DoIPClient::closeTcpConnection(){  
+    close(_sockFd); 
 }
 
 void DoIPClient::closeUdpConnection(){
-    
     close(_sockFd_udp);
 }
 
 /*
  *Build the Routing-Activation-Request for server
  */
-const pair<int,unsigned char*>* DoIPClient::buildRoutingActivationRequest() {
+const std::pair<int,unsigned char*>* DoIPClient::buildRoutingActivationRequest() {
     
-   pair <int,unsigned char*>* rareqWithLength= new pair<int,unsigned char*>();
+   std::pair <int,unsigned char*>* rareqWithLength= new std::pair<int,unsigned char*>();
    int rareqLength=15;
    unsigned char * rareq= new unsigned char[rareqLength];
   
@@ -98,16 +94,16 @@ const pair<int,unsigned char*>* DoIPClient::buildRoutingActivationRequest() {
  */
 void DoIPClient::sendRoutingActivationRequest() {
         
-    const pair <int,unsigned char*>* rareqWithLength=buildRoutingActivationRequest();
+    const std::pair <int,unsigned char*>* rareqWithLength=buildRoutingActivationRequest();
     write(_sockFd,rareqWithLength->second,rareqWithLength->first);    
 }
 
 void DoIPClient::sendDiagnosticMessage(unsigned char* userData, int userDataLength) {
-	unsigned char sourceAddress [2] = {0x0E,0x00};
-	unsigned char targetAddress [2] = {0xE0,0x00};
-	unsigned char* message = createDiagnosticMessage(sourceAddress, targetAddress, userData, userDataLength);
-	
-	write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);
+    unsigned char sourceAddress [2] = {0x0E,0x00};
+    unsigned char targetAddress [2] = {0xE0,0x00};
+    unsigned char* message = createDiagnosticMessage(sourceAddress, targetAddress, userData, userDataLength);
+
+    write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);
 }
 
 /*
@@ -115,15 +111,14 @@ void DoIPClient::sendDiagnosticMessage(unsigned char* userData, int userDataLeng
  */
 void DoIPClient::receiveMessage() {
     
-    int readedBytes;
-    readedBytes= read(_sockFd,_receivedData,_maxDataSize);
+    int readedBytes = read(_sockFd,_receivedData,_maxDataSize);
 	
-	printf("Client received: ");
-   	for(int i=0;i<readedBytes;i++)
+    printf("Client received: ");
+    for(int i = 0; i < readedBytes; i++)
     {
-    	printf("0x%02X", _receivedData[i]);
+        printf("0x%02X ", _receivedData[i]);
     }    
-	printf("\n");	
+    printf("\n");	
 }
 
 void DoIPClient::receiveUdpMessage() {
@@ -135,7 +130,7 @@ void DoIPClient::receiveUdpMessage() {
     
     for(int i=0;i<readedBytes;i++)
     {
-       cout<<(int)_receivedData[i]<<endl;
+       std::cout << (int)_receivedData[i] << std::endl;
     } 
     
     if(_receivedData[2] == 0x00 && _receivedData[3] == 0x04)
@@ -145,26 +140,26 @@ void DoIPClient::receiveUdpMessage() {
     
 }
 
-const pair<int,unsigned char*>* DoIPClient::buildVehicleIdentificationRequest(){
+const std::pair<int,unsigned char*>* DoIPClient::buildVehicleIdentificationRequest(){
     
-   pair <int,unsigned char*>* rareqWithLength= new pair<int,unsigned char*>();
-   int rareqLength= 8;
-   unsigned char * rareq= new unsigned char[rareqLength];
-  
+    std::pair <int,unsigned char*>* rareqWithLength= new std::pair<int,unsigned char*>();
+    int rareqLength= 8;
+    unsigned char * rareq= new unsigned char[rareqLength];
+
     //Generic Header
-   rareq[0]=0x02;  //Protocol Version
-   rareq[1]=0xFD;  //Inverse Protocol Version
-   rareq[2]=0x00;  //Payload-Type
-   rareq[3]=0x01;
-   rareq[4]=0x00;  //Payload-Length
-   rareq[5]=0x00;  
-   rareq[6]=0x00;
-   rareq[7]=0x00;
-    
-   rareqWithLength->first=rareqLength;
-   rareqWithLength->second=rareq;
-  
-   return rareqWithLength;
+    rareq[0]=0x02;  //Protocol Version
+    rareq[1]=0xFD;  //Inverse Protocol Version
+    rareq[2]=0x00;  //Payload-Type
+    rareq[3]=0x01;
+    rareq[4]=0x00;  //Payload-Length
+    rareq[5]=0x00;  
+    rareq[6]=0x00;
+    rareq[7]=0x00;
+
+    rareqWithLength->first=rareqLength;
+    rareqWithLength->second=rareq;
+
+    return rareqWithLength;
     
 }
 
@@ -177,24 +172,24 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
      
      if(strcmp(address, "255.255.255.255") == 0)
      {
-         cout << "Bereite Limited Broadcast vor" << endl;
+         std::cout << "Bereite Limited Broadcast vor" << std::endl;
          
          
          setsockopt(_sockFd_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
          
          if(setsockopt >= 0)
          {
-             cout << "Setzen der Option erfolgreich" << endl;
+             std::cout << "Setzen der Option erfolgreich" << std::endl;
          }
          
-     } 
+     }
     
-    const pair <int,unsigned char*>* rareqWithLength=buildVehicleIdentificationRequest();
+    const std::pair <int,unsigned char*>* rareqWithLength=buildVehicleIdentificationRequest();
     sendto(_sockFd_udp, rareqWithLength->second,rareqWithLength->first, 0, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr));
     
     if(sendto >= 0)
     {
-        cout << "Sende VIRequest" << endl;
+        std::cout << "Sende VIRequest" << std::endl;
     }
 }
 
@@ -202,14 +197,14 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
 * Getter for _sockFD
 */
 int DoIPClient::getSockFd() {
-	return _sockFd;
+    return _sockFd;
 }
 
 /*
 * Getter for _connected
 */
 int DoIPClient::getConnected() {
-	return _connected;
+    return _connected;
 }
 
 void DoIPClient::parseVIResponseInformation(unsigned char* data){
@@ -254,40 +249,40 @@ void DoIPClient::parseVIResponseInformation(unsigned char* data){
 void DoIPClient::displayVIResponseInformation()
 {
     //output VIN
-    cout << "VIN: ";
+    std::cout << "VIN: ";
     for(int i = 0; i < 17 ;i++)
     {
-        cout << (unsigned char)(int)VINResult[i];
+        std::cout << (unsigned char)(int)VINResult[i];
     }
-    cout << endl;
+    std::cout << std::endl;
     
     //output LogicalAddress
-    cout << "LogicalAddress: ";
+    std::cout << "LogicalAddress: ";
     for(int i = 0; i < 2; i++)
     {
         printf("%X", (int)LogicalAddressResult[i]);
     }
-    cout << endl;
+    std::cout << std::endl;
     
     //output EID
-    cout << "EID: ";
+    std::cout << "EID: ";
     for(int i = 0; i < 6; i++)
     {
         printf("%X", (int)EIDResult[i]);
     }
-    cout << endl;
+    std::cout << std::endl;
     
      //output GID
-    cout << "GID: ";
+    std::cout << "GID: ";
     for(int i = 0; i < 6; i++)
     {
         printf("%X", (int)GIDResult[i]);
     }
-    cout << endl;
+    std::cout << std::endl;
     
     //output FurtherActionRequest
-    cout << "FurtherActionRequest: ";
+    std::cout << "FurtherActionRequest: ";
     printf("%X", (int)FurtherActionReqResult);
     
-    cout << endl;
+    std::cout << std::endl;
 }
