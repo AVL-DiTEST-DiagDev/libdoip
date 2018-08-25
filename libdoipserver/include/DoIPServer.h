@@ -26,15 +26,19 @@ public:
               
     void setupSocket();
     void setupUdpSocket();
-    void receiveMessage();
-    void receiveUdpMessage();
+    int receiveMessage();
+    int receiveUdpMessage();
     void receiveDiagnosticPayload(unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
+    
+    const unsigned char* getData();
+    int getDataLength() const;
 
 private:
     const DiagnosticCallback diag_callback;
     unsigned char data[_MaxDataSize];
+    int dataLength;
     int sockfd_receiver, sockfd_receiver_udp, sockfd_sender;
     struct sockaddr_in serverAddress, clientAddress;
     unsigned char* routedClientAddress;
@@ -45,8 +49,8 @@ private:
     unsigned char GID [6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char FurtherActionReq = 0x00;
 
-    void sendMessage(unsigned char* message, int messageLenght);
-    void sendUdpMessage(unsigned char* message, int messageLength);
+    int sendMessage(unsigned char* message, int messageLenght);
+    int sendUdpMessage(unsigned char* message, int messageLength);
         
     void setEIDdefault();
     void setVIN(const char* VINString);
@@ -56,14 +60,4 @@ private:
     void setFAR(const unsigned int inputFAR);
 };
 
-        
-
-
-
-
-
-
-
-
 #endif /* DOIPSERVER_H */
-
