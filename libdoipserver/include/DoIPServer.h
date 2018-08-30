@@ -22,8 +22,9 @@ const int _MaxDataSize = 64;
 class DoIPServer {
 
 public:
+    DoIPServer() = default;
     DoIPServer(DiagnosticCallback diag_callback): diag_callback{diag_callback} { };
-              
+    void setCallback(DiagnosticCallback cb);              
     void setupSocket();
     void setupUdpSocket();
     int receiveMessage();
@@ -36,7 +37,7 @@ public:
     int getDataLength() const;
 
 private:
-    const DiagnosticCallback diag_callback;
+    DiagnosticCallback diag_callback;
     unsigned char data[_MaxDataSize];
     int dataLength;
     int sockfd_receiver, sockfd_receiver_udp, sockfd_sender;

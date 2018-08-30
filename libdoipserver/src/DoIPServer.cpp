@@ -295,3 +295,11 @@ const unsigned char* DoIPServer::getData() {
 int DoIPServer::getDataLength() const {
     return dataLength;
 }
+
+/*
+ * Set the callback function for this doip server instance
+ * @cb  callback function
+ */
+void DoIPServer::setCallback(DiagnosticCallback cb) {
+	diag_callback = cb;
+}
