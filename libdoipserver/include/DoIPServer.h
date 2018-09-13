@@ -32,9 +32,17 @@ public:
     void receiveDiagnosticPayload(unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
-    
+
     const unsigned char* getData();
     int getDataLength() const;
+
+    void setEIDdefault();
+    void setVIN(const char* VINString);
+    void setLogicalAddress(const unsigned int inputLogAdd);
+    void setEID(const unsigned long inputEID);
+    void setGID(const unsigned long inputGID);
+    void setFAR(const unsigned int inputFAR);
+
 
 private:
     DiagnosticCallback diag_callback;
@@ -52,13 +60,10 @@ private:
 
     int sendMessage(unsigned char* message, int messageLenght);
     int sendUdpMessage(unsigned char* message, int messageLength);
+    void setMulticastGroup(const char* address);
+
         
-    void setEIDdefault();
-    void setVIN(const char* VINString);
-    void setLogicalAddress(const unsigned int inputLogAdd);
-    void setEID(const unsigned long inputEID);
-    void setGID(const unsigned long inputGID);
-    void setFAR(const unsigned int inputFAR);
+    
 };
 
 #endif /* DOIPSERVER_H */
