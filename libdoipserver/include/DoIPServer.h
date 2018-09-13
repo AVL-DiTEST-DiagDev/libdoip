@@ -22,26 +22,32 @@ const int _MaxDataSize = 64;
 class DoIPServer {
 
 public:
+    DoIPServer() = default;
     DoIPServer(DiagnosticCallback diag_callback): diag_callback{diag_callback} { };
-              
+    void setCallback(DiagnosticCallback cb);              
     void setupSocket();
     void setupUdpSocket();
-    void receiveMessage();
-    void receiveUdpMessage();
+    int receiveMessage();
+    int receiveUdpMessage();
     void receiveDiagnosticPayload(unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
+
+    const unsigned char* getData();
+    int getDataLength() const;
+
     void setEIDdefault();
     void setVIN(const char* VINString);
     void setLogicalAddress(const unsigned int inputLogAdd);
     void setEID(const unsigned long inputEID);
     void setGID(const unsigned long inputGID);
     void setFAR(const unsigned int inputFAR);
-    
+
 
 private:
-    const DiagnosticCallback diag_callback;
+    DiagnosticCallback diag_callback;
     unsigned char data[_MaxDataSize];
+    int dataLength;
     int sockfd_receiver, sockfd_receiver_udp, sockfd_sender;
     struct sockaddr_in serverAddress, clientAddress;
     unsigned char* routedClientAddress;
@@ -52,23 +58,12 @@ private:
     unsigned char GID [6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char FurtherActionReq = 0x00;
 
-    void sendMessage(unsigned char* message, int messageLenght);
-    void sendUdpMessage(unsigned char* message, int messageLength);
+    int sendMessage(unsigned char* message, int messageLenght);
+    int sendUdpMessage(unsigned char* message, int messageLength);
     void setMulticastGroup(const char* address);
+
         
     
 };
 
-
-
-        
-
-
-
-
-
-
-
-
 #endif /* DOIPSERVER_H */
-
