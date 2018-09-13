@@ -31,6 +31,13 @@ public:
     void receiveDiagnosticPayload(unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
+    void setEIDdefault();
+    void setVIN(const char* VINString);
+    void setLogicalAddress(const unsigned int inputLogAdd);
+    void setEID(const unsigned long inputEID);
+    void setGID(const unsigned long inputGID);
+    void setFAR(const unsigned int inputFAR);
+    
 
 private:
     const DiagnosticCallback diag_callback;
@@ -47,14 +54,12 @@ private:
 
     void sendMessage(unsigned char* message, int messageLenght);
     void sendUdpMessage(unsigned char* message, int messageLength);
+    void setMulticastGroup(const char* address);
         
-    void setEIDdefault();
-    void setVIN(const char* VINString);
-    void setLogicalAddress(const unsigned int inputLogAdd);
-    void setEID(const unsigned long inputEID);
-    void setGID(const unsigned long inputGID);
-    void setFAR(const unsigned int inputFAR);
+    
 };
+
+
 
         
 
