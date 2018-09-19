@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include "DiagnosticMessageHandler.h"
+#include "DoIPGenericHeaderHandler.h"
 
 const int _serverPortNr=13400;
 const int _maxDataSize=64;

@@ -5,6 +5,7 @@
 #include <functional>
 
 using DiagnosticCallback = std::function<void(unsigned char*, int)>;
+using DiagnosticMessageNotification = std::function<bool()>;
 
 const int _DiagnosticPositiveACKLength = 5;
 const int _DiagnosticMessageMinimumLength = 4;

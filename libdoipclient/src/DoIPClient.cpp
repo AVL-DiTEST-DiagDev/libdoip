@@ -118,7 +118,30 @@ void DoIPClient::receiveMessage() {
     {
         printf("0x%02X ", _receivedData[i]);
     }    
-    printf("\n");	
+    printf("\n ");	
+    
+    GenericHeaderAction action = parseGenericHeader(_receivedData, readedBytes);
+
+    if(action.type == PayloadType::DIAGNOSTICPOSITIVEACK || action.type == PayloadType::DIAGNOSTICNEGATIVEACK) {
+        switch(action.type) {
+            case PayloadType::DIAGNOSTICPOSITIVEACK: {
+                std::cout << "Client received diagnostic message positive ack with code: ";
+                printf("0x%02X ", _receivedData[12]);
+                break;
+            }
+            case PayloadType::DIAGNOSTICNEGATIVEACK: {
+                std::cout << "Client received diagnostic message negative ack with code: ";
+                printf("0x%02X ", _receivedData[12]);
+                break;
+            }
+            default: {
+                std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
+                break;
+            }
+        }
+        std::cout << std::endl;
+    }
+ 
 }
 
 void DoIPClient::receiveUdpMessage() {

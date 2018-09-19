@@ -24,7 +24,7 @@ class DoIPServer {
 public:
     DoIPServer() = default;
     DoIPServer(DiagnosticCallback diag_callback): diag_callback{diag_callback} { };
-    void setCallback(DiagnosticCallback cb);              
+    void setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn);              
     void setupSocket();
     void setupUdpSocket();
     int receiveMessage();
@@ -32,12 +32,14 @@ public:
     void receiveDiagnosticPayload(unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
-    
+    void sendDiagnosticAck(PayloadType type, unsigned char ackCode);
+
     const unsigned char* getData();
     int getDataLength() const;
 
 private:
     DiagnosticCallback diag_callback;
+    DiagnosticMessageNotification diag_notification;
     unsigned char data[_MaxDataSize];
     int dataLength;
     int sockfd_receiver, sockfd_receiver_udp, sockfd_sender;
