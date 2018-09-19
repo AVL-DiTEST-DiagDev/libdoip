@@ -37,6 +37,14 @@ public:
     const unsigned char* getData();
     int getDataLength() const;
 
+    void setEIDdefault();
+    void setVIN(const char* VINString);
+    void setLogicalAddress(const unsigned int inputLogAdd);
+    void setEID(const unsigned long inputEID);
+    void setGID(const unsigned long inputGID);
+    void setFAR(const unsigned int inputFAR);
+
+
 private:
     DiagnosticCallback diag_callback;
     DiagnosticMessageNotification diag_notification;
@@ -54,13 +62,8 @@ private:
 
     int sendMessage(unsigned char* message, int messageLenght);
     int sendUdpMessage(unsigned char* message, int messageLength);
-        
-    void setEIDdefault();
-    void setVIN(const char* VINString);
-    void setLogicalAddress(const unsigned int inputLogAdd);
-    void setEID(const unsigned long inputEID);
-    void setGID(const unsigned long inputGID);
-    void setFAR(const unsigned int inputFAR);
+    void setMulticastGroup(const char* address);
+
 };
 
 #endif /* DOIPSERVER_H */

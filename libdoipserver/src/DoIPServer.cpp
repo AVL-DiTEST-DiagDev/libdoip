@@ -32,6 +32,9 @@ void DoIPServer::setupUdpSocket(){
     //binds the socket to the address and port number
     bind(sockfd_receiver_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
     
+    //setting the IP Address for Multicast
+    setMulticastGroup("224.0.0.2");
+    
 }
 
 /*
@@ -124,8 +127,7 @@ int DoIPServer::receiveMessage() {
  */
 int DoIPServer::receiveUdpMessage(){
     
-    unsigned int length = sizeof(clientAddress);
-    
+    unsigned int length = sizeof(clientAddress);   
     int readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &clientAddress, &length);
         
     if(readedBytes > 0) {
@@ -151,7 +153,6 @@ int DoIPServer::receiveUdpMessage(){
             }
 
             case PayloadType::VEHICLEIDENTREQUEST: {
-
                 unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
                 sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);   
                 
@@ -285,6 +286,33 @@ const unsigned char* DoIPServer::getData() {
  */
 int DoIPServer::getDataLength() const {
     return dataLength;
+}
+
+void DoIPServer::setMulticastGroup(const char* address) {
+    
+    int loop = 1;
+    
+    //set Option using the same Port for multiple Sockets
+    int setPort = setsockopt(sockfd_receiver_udp, SOL_SOCKET, SO_REUSEADDR, &loop, sizeof(loop));
+    
+    if(setPort < 0)
+    {
+        std::cout << "Setting Port Error" << std::endl;
+    }
+    
+     
+    struct ip_mreq mreq;
+    
+    mreq.imr_multiaddr.s_addr = inet_addr(address);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    
+    //set Option to join Multicast Group
+    int setGroup = setsockopt(sockfd_receiver_udp, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq));
+    
+    if(setGroup < 0)
+    {
+        std::cout <<"Setting Address Error" << std::endl;
+    }
 }
 
 /*

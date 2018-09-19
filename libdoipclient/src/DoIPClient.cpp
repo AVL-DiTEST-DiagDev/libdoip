@@ -36,7 +36,7 @@ void DoIPClient::startUdpConnection(){
     
     if(_sockFd_udp>= 0)
     {
-        std::cout << "Client-UDP-Socket wurde angelegt." << std::endl;
+        std::cout << "Client-UDP-Socket created successfully" << std::endl;
         
         _serverAddr.sin_family=AF_INET;
         _serverAddr.sin_port=htons(_serverPortNr);
@@ -187,32 +187,28 @@ const std::pair<int,unsigned char*>* DoIPClient::buildVehicleIdentificationReque
 }
 
 void DoIPClient::sendVehicleIdentificationRequest(const char* address){
-    
-     const char* ipAddr= address;
      
-     inet_aton(ipAddr,&(_serverAddr.sin_addr));
-     
-     
-     if(strcmp(address, "255.255.255.255") == 0)
-     {
-         std::cout << "Bereite Limited Broadcast vor" << std::endl;
-         
-         
-         setsockopt(_sockFd_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
-         
-         if(setsockopt >= 0)
-         {
-             std::cout << "Setzen der Option erfolgreich" << std::endl;
-         }
-         
-     }
+    int setAddressError = inet_aton(address,&(_serverAddr.sin_addr));
     
-    const std::pair <int,unsigned char*>* rareqWithLength=buildVehicleIdentificationRequest();
-    sendto(_sockFd_udp, rareqWithLength->second,rareqWithLength->first, 0, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr));
-    
-    if(sendto >= 0)
+    if(setAddressError != 0)
     {
-        std::cout << "Sende VIRequest" << std::endl;
+        std::cout <<"Address set succesfully"<<std::endl;
+    }
+     
+    int socketError = setsockopt(_sockFd_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
+         
+    if(socketError == 0)
+    {
+        std::cout << "Broadcast Option set successfully" << std::endl;
+    }
+      
+    const std::pair <int,unsigned char*>* rareqWithLength=buildVehicleIdentificationRequest();
+    
+    int sendError = sendto(_sockFd_udp, rareqWithLength->second,rareqWithLength->first, 0, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr));
+    
+    if(sendError > 0)
+    {
+        std::cout << "Sending Vehicle Identification Request" << std::endl;
     }
 }
 
