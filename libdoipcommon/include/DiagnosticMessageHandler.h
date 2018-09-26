@@ -4,8 +4,8 @@
 #include "DoIPGenericHeaderHandler.h"
 #include <functional>
 
-using DiagnosticCallback = std::function<void(unsigned char*, int)>;
-using DiagnosticMessageNotification = std::function<bool()>;
+using DiagnosticCallback = std::function<void(unsigned char*, unsigned char*, int)>;
+using DiagnosticMessageNotification = std::function<bool(unsigned char*)>;
 
 const int _DiagnosticPositiveACKLength = 5;
 const int _DiagnosticMessageMinimumLength = 4;

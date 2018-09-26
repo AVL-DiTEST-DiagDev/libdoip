@@ -17,18 +17,9 @@ unsigned char parseDiagnosticMessage(DiagnosticCallback cb, unsigned char source
         return 0x02;
     }
 
-    //Check if the TA is known
-    //TODO: remove hard coded value
-    if(data[10] != 0xE0 || data[11] != 0x00) {
-        //TA is not known
-        return 0x03;
-    }
-
-    //Check if diagnostic Message size is generally supported by the target networt/TP	
-    //Check if the currently available target buffer can handle the diagnostic message	
-    //Check if TA is reachable/Routing to TA is already configured validy
-
     //Pass the diagnostic message to the target network/transport layer
+    unsigned char target_address [2] = {data[10], data[11]};
+    
     int cb_message_length = diagMessageLength - _DiagnosticMessageMinimumLength;
     unsigned char* cb_message = new unsigned char[cb_message_length];
     
@@ -36,7 +27,7 @@ unsigned char parseDiagnosticMessage(DiagnosticCallback cb, unsigned char source
         cb_message[i - _DiagnosticMessageMinimumLength] = data[8+ i];
     }
     
-    cb(cb_message, cb_message_length);
+    cb(target_address, cb_message, cb_message_length);
 
     //return positive ack code
     return 0x00;

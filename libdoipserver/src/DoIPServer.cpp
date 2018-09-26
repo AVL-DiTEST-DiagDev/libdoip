@@ -102,12 +102,14 @@ int DoIPServer::receiveMessage() {
             }
 				
             case PayloadType::DIAGNOSTICMESSAGE: {
-                bool ack = diag_notification();
+                              
+                unsigned char target_address [2] = {data[10], data[11]};           
+                bool ack = diag_notification(target_address);
+                
                 if(ack)
                     parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
                 
                 break;
-                
             }
             
             default: {
