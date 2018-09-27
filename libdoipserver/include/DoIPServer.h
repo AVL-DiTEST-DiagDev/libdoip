@@ -33,6 +33,7 @@ public:
     void closeSocket();
     void closeUdpSocket();
     void sendDiagnosticAck(PayloadType type, unsigned char ackCode);
+    int sendNegativeAck(unsigned char ackCode);
 
     const unsigned char* getData();
     int getDataLength() const;

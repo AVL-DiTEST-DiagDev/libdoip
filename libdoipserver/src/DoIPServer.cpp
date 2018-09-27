@@ -66,15 +66,11 @@ int DoIPServer::receiveMessage() {
         switch(action.type) {
             case PayloadType::NEGATIVEACK: {
                 //send NACK
-                unsigned char* message = createGenericHeader(action.type, _NACKLength);
-                message[8] = action.value;
-                sendedBytes = sendMessage(message, _GenericHeaderLength + _NACKLength);
+                sendedBytes = sendNegativeAck(action.value);
                 
                 if(action.value == 0x00 || action.value == 0x04) {
                     closeSocket();
                     return -1;
-                } else {
-                    //discard message when value 0x01, 0x02, 0x03
                 }
                 
                 return sendedBytes;
@@ -332,4 +328,16 @@ void DoIPServer::sendDiagnosticAck(PayloadType type, unsigned char ackCode) {
     
     unsigned char* message = createDiagnosticACK(type, data_SA, data_TA, ackCode);
     sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
+}
+
+/**
+ * Prepares a generic header nack and sends it to the client
+ * @param ackCode       NACK-Code which will be included in the message
+ * @return              amount of bytes sended to the client
+ */
+int DoIPServer::sendNegativeAck(unsigned char ackCode) {
+    unsigned char* message = createGenericHeader(PayloadType::NEGATIVEACK, _NACKLength);
+    message[8] = ackCode;
+    int sendedBytes = sendMessage(message, _GenericHeaderLength + _NACKLength);
+    return sendedBytes;
 }
