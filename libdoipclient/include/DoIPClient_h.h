@@ -26,7 +26,7 @@ public:
     void receiveRoutingActivationResponse();
     void receiveUdpMessage();
     void receiveMessage();
-    void sendDiagnosticMessage(unsigned char* userData, int userDataLength);
+    void sendDiagnosticMessage(unsigned char* targetAddress, unsigned char* userData, int userDataLength);
     void displayVIResponseInformation();
     void closeTcpConnection();
     void closeUdpConnection();

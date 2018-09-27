@@ -98,9 +98,14 @@ void DoIPClient::sendRoutingActivationRequest() {
     write(_sockFd,rareqWithLength->second,rareqWithLength->first);    
 }
 
-void DoIPClient::sendDiagnosticMessage(unsigned char* userData, int userDataLength) {
+/**
+ * Sends a diagnostic message to the server
+ * @param targetAddress     the address of the ecu which should receive the message
+ * @param userData          data that will be given to the ecu
+ * @param userDataLength    length of userData
+ */
+void DoIPClient::sendDiagnosticMessage(unsigned char* targetAddress, unsigned char* userData, int userDataLength) {
     unsigned char sourceAddress [2] = {0x0E,0x00};
-    unsigned char targetAddress [2] = {0xE0,0x00};
     unsigned char* message = createDiagnosticMessage(sourceAddress, targetAddress, userData, userDataLength);
 
     write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);
