@@ -29,7 +29,7 @@ public:
     void setupUdpSocket();
     int receiveMessage();
     int receiveUdpMessage();
-    void receiveDiagnosticPayload(unsigned char* value, int length);
+    void receiveDiagnosticPayload(unsigned char* address, unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
     void sendDiagnosticAck(PayloadType type, unsigned char ackCode);
