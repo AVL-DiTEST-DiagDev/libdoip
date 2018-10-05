@@ -26,10 +26,8 @@ void DoIPServer::setupUdpSocket(){
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
-    if(sockfd_receiver_udp >= 0)
-        std::cout << "UDP Socket created successfully" << std::endl;
-    
-    
+    if(sockfd_receiver_udp < 0)
+        std::cout << "Error setting up a udp socket" << std::endl;
     
     //binds the socket to the address and port number
     bind(sockfd_receiver_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
@@ -68,15 +66,11 @@ int DoIPServer::receiveMessage() {
         switch(action.type) {
             case PayloadType::NEGATIVEACK: {
                 //send NACK
-                unsigned char* message = createGenericHeader(action.type, _NACKLength);
-                message[8] = action.value;
-                sendedBytes = sendMessage(message, _GenericHeaderLength + _NACKLength);
+                sendedBytes = sendNegativeAck(action.value);
                 
                 if(action.value == 0x00 || action.value == 0x04) {
                     closeSocket();
                     return -1;
-                } else {
-                    //discard message when value 0x01, 0x02, 0x03
                 }
                 
                 return sendedBytes;
@@ -104,21 +98,14 @@ int DoIPServer::receiveMessage() {
             }
 				
             case PayloadType::DIAGNOSTICMESSAGE: {
-                unsigned char result = parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
-                PayloadType resultType; 
-                if(result == 0x00) {
-                    resultType = PayloadType::DIAGNOSTICPOSITIVEACK;
-                } else {
-                    resultType = PayloadType::DIAGNOSTICNEGATIVEACK;	
-                }
-
-                unsigned char data_TA [2] = { data[8], data[9] };
-                unsigned char data_SA [2] = { data[10], data[11] };
-
-                unsigned char* message = createDiagnosticACK(resultType, data_SA, data_TA, result);
-                sendedBytes = sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
+                              
+                unsigned char target_address [2] = {data[10], data[11]};           
+                bool ack = diag_notification(target_address);
                 
-                return sendedBytes;
+                if(ack)
+                    parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
+                
+                break;
             }
             
             default: {
@@ -266,7 +253,7 @@ void DoIPServer::setFAR(const unsigned int inputFAR){
  * @param value     received payload
  * @param length    length of received payload
  */
-void DoIPServer::receiveDiagnosticPayload(unsigned char* value, int length) {
+void DoIPServer::receiveDiagnosticPayload(unsigned char* address, unsigned char* value, int length) {
 
     printf("DoiPServer received from server application: ");
     for(int i = 0; i < length; i++) {
@@ -274,12 +261,7 @@ void DoIPServer::receiveDiagnosticPayload(unsigned char* value, int length) {
     }
     printf("\n");
     
-    //sourceAddress = address of the doip server
-    unsigned char doipAddress [2] = { 0xE0, 0x00 };     //TODO: remove hardcoded values
-    
-    //targetAddress = address of the test client, which is already routed
-    unsigned char* message = createDiagnosticMessage(doipAddress, routedClientAddress, value, length);
-    
+    unsigned char* message = createDiagnosticMessage(address, routedClientAddress, value, length);  
     sendMessage(message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + length);
 }
 
@@ -330,6 +312,27 @@ void DoIPServer::setMulticastGroup(const char* address) {
  * Set the callback function for this doip server instance
  * @cb  callback function
  */
-void DoIPServer::setCallback(DiagnosticCallback cb) {
-	diag_callback = cb;
+void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn) {
+    diag_callback = dc;
+    diag_notification = dmn;
+}
+
+void DoIPServer::sendDiagnosticAck(PayloadType type, unsigned char ackCode) {
+    unsigned char data_TA [2] = { 0x0E, 0x00 };
+    unsigned char data_SA [2] = { 0xE0, 0x00 };
+    
+    unsigned char* message = createDiagnosticACK(type, data_SA, data_TA, ackCode);
+    sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
+}
+
+/**
+ * Prepares a generic header nack and sends it to the client
+ * @param ackCode       NACK-Code which will be included in the message
+ * @return              amount of bytes sended to the client
+ */
+int DoIPServer::sendNegativeAck(unsigned char ackCode) {
+    unsigned char* message = createGenericHeader(PayloadType::NEGATIVEACK, _NACKLength);
+    message[8] = ackCode;
+    int sendedBytes = sendMessage(message, _GenericHeaderLength + _NACKLength);
+    return sendedBytes;
 }

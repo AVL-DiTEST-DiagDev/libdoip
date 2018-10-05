@@ -24,14 +24,16 @@ class DoIPServer {
 public:
     DoIPServer() = default;
     DoIPServer(DiagnosticCallback diag_callback): diag_callback{diag_callback} { };
-    void setCallback(DiagnosticCallback cb);              
+    void setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn);              
     void setupSocket();
     void setupUdpSocket();
     int receiveMessage();
     int receiveUdpMessage();
-    void receiveDiagnosticPayload(unsigned char* value, int length);
+    void receiveDiagnosticPayload(unsigned char* address, unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
+    void sendDiagnosticAck(PayloadType type, unsigned char ackCode);
+    int sendNegativeAck(unsigned char ackCode);
 
     const unsigned char* getData();
     int getDataLength() const;
@@ -46,6 +48,7 @@ public:
 
 private:
     DiagnosticCallback diag_callback;
+    DiagnosticMessageNotification diag_notification;
     unsigned char data[_MaxDataSize];
     int dataLength;
     int sockfd_receiver, sockfd_receiver_udp, sockfd_sender;
@@ -62,8 +65,6 @@ private:
     int sendUdpMessage(unsigned char* message, int messageLength);
     void setMulticastGroup(const char* address);
 
-        
-    
 };
 
 #endif /* DOIPSERVER_H */
