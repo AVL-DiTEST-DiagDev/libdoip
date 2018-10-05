@@ -2,8 +2,10 @@
 #define DIAGNOSTICMESSAGEHANDLER_H
 
 #include "DoIPGenericHeaderHandler.h"
+#include <functional>
 
-typedef void (*DiagnosticCallback)(unsigned char*, int);
+using DiagnosticCallback = std::function<void(unsigned char*, unsigned char*, int)>;
+using DiagnosticMessageNotification = std::function<bool(unsigned char*)>;
 
 const int _DiagnosticPositiveACKLength = 5;
 const int _DiagnosticMessageMinimumLength = 4;

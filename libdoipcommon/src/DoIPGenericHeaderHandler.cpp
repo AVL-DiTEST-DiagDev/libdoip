@@ -28,7 +28,13 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
         action.type = PayloadType::VEHICLEIDENTREQUEST;
     }
     else if(data[2] == 0x80 && data[3] == 0x01) {		//Value of Diagnose Message = 0x8001
-		action.type = PayloadType::DIAGNOSTICMESSAGE;
+        action.type = PayloadType::DIAGNOSTICMESSAGE;
+    } 
+    else if(data[2] == 0x80 && data[3] == 0x02) {                   //Value of Diagnostic Message positive ack =
+        action.type = PayloadType::DIAGNOSTICPOSITIVEACK;
+    } 
+    else if(data[2] == 0x80 && data[3] == 0x03) {                   //Value of Diagnostic Message negative ack =
+        action.type = PayloadType::DIAGNOSTICNEGATIVEACK;
     } else {
         //Unknown Payload Type --> Send Generic DoIP Header NACK
         action.type = PayloadType::NEGATIVEACK;
@@ -73,6 +79,22 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
                 return action;
             }
             break;	
+        }
+        
+        case PayloadType::DIAGNOSTICPOSITIVEACK: {
+            if(dataLenght - _GenericHeaderLength != 5) {
+                action.type = PayloadType::NEGATIVEACK;
+                action.value = 0x04;
+            }
+            break;
+        }
+        
+        case PayloadType::DIAGNOSTICNEGATIVEACK: {
+            if(dataLenght - _GenericHeaderLength != 5) {
+                action.type = PayloadType::NEGATIVEACK;
+                action.value = 0x04;
+            }
+            break;
         }
 
         default: {

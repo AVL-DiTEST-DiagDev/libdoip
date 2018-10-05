@@ -26,10 +26,8 @@ void DoIPServer::setupUdpSocket(){
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
-    if(sockfd_receiver_udp >= 0)
-        std::cout << "UDP Socket created successfully" << std::endl;
-    
-    
+    if(sockfd_receiver_udp < 0)
+        std::cout << "Error setting up a udp socket" << std::endl;
     
     //binds the socket to the address and port number
     bind(sockfd_receiver_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
@@ -53,28 +51,29 @@ void DoIPServer::closeUdpSocket() {
 
 /*
  * Receives a message from the client and determine how to process the message
+ * @return      amount of bytes which were send back to client
+ *              or -1 if error occurred     
  */
-void DoIPServer::receiveMessage() {
+int DoIPServer::receiveMessage() {
 
-    int readedBytes;
-    readedBytes = recv(sockfd_sender, data, _MaxDataSize, 0);
+    int readedBytes = recv(sockfd_sender, data, _MaxDataSize, 0);
 
     if(readedBytes > 0) {
+        dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
        
+        int sendedBytes;
         switch(action.type) {
             case PayloadType::NEGATIVEACK: {
                 //send NACK
-                unsigned char* message = createGenericHeader(action.type, _NACKLength);
-                message[8] = action.value;
-                sendMessage(message, _GenericHeaderLength + _NACKLength);
+                sendedBytes = sendNegativeAck(action.value);
                 
                 if(action.value == 0x00 || action.value == 0x04) {
                     closeSocket();
-                } else {
-                    //discard message when value 0x01, 0x02, 0x03
+                    return -1;
                 }
-                break;
+                
+                return sendedBytes;
             }
             
             case PayloadType::ROUTINGACTIVATIONREQUEST: {
@@ -83,94 +82,107 @@ void DoIPServer::receiveMessage() {
                 unsigned char clientAddress [2] = {data[8], data[9]};
                 
                 unsigned char* message = createRoutingActivationResponse(clientAddress, result);
-                sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
+                sendedBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
                 
                 if(result == 0x00 || result == 0x06) {
                     closeSocket();
+                    return -1;
                 } else {
                     //Routing Activation Request was successfull, save address of the client
                     routedClientAddress = new unsigned char[2];
                     routedClientAddress[0] = data[8];
                     routedClientAddress[1] = data[9];
                 }
-                
-                break;
+
+                return sendedBytes;
             }
 				
             case PayloadType::DIAGNOSTICMESSAGE: {
-                unsigned char result = parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
-                PayloadType resultType; 
-                if(result == 0x00) {
-                    resultType = PayloadType::DIAGNOSTICPOSITIVEACK;
-                } else {
-                    resultType = PayloadType::DIAGNOSTICNEGATIVEACK;	
-                }
-
-                unsigned char data_TA [2] = { data[8], data[9] };
-                unsigned char data_SA [2] = { data[10], data[11] };
-
-                unsigned char* message = createDiagnosticACK(resultType, data_SA, data_TA, result);
-                sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
+                              
+                unsigned char target_address [2] = {data[10], data[11]};           
+                bool ack = diag_notification(target_address);
                 
-		break;	
+                if(ack)
+                    parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
+                
+                break;
             }
             
             default: {
                 std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
-                break;	
+                return -1;
             }
-        }    
-    } 
+        }  
+    }
+    
+    return -1;
 }
 
-void DoIPServer::receiveUdpMessage(){
+/*
+ * Receives a udp message and determine how to process the message
+ * @return      amount of bytes which were send back to client
+ *              or -1 if error occurred     
+ */
+int DoIPServer::receiveUdpMessage(){
     
-    
-    unsigned int length = sizeof(clientAddress);
-    
-    std::cout << "DoIP receiving.." << std::endl;
-    
-    int readedBytes;
-    
-    readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &clientAddress, &length);
+    unsigned int length = sizeof(clientAddress);   
+    int readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &clientAddress, &length);
         
-        if(readedBytes > 0)
-        {
-            GenericHeaderAction action = parseGenericHeader(data, readedBytes);
-             
-            switch(action.type) {
-                
-                case PayloadType::VEHICLEIDENTREQUEST: {
-                      
-                    unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
-                     
-                    sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);   
+    if(readedBytes > 0) {
+        dataLength = readedBytes;
+        GenericHeaderAction action = parseGenericHeader(data, readedBytes);
 
-                    break; 
+        int sendedBytes;
+        switch(action.type) {
+
+            case PayloadType::NEGATIVEACK: {
+                //send NACK
+                unsigned char* message = createGenericHeader(action.type, _NACKLength);
+                message[8] = action.value;
+                sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _NACKLength);
+
+                if(action.value == 0x00 || action.value == 0x04) {
+                    closeSocket();
+                    return -1;
+                } else {
+                    //discard message when value 0x01, 0x02, 0x03
                 }
-                 
-                default: { 
-                    std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
-                    break; 
-                }
-            }         
-      }
+                return sendedBytes;
+            }
+
+            case PayloadType::VEHICLEIDENTREQUEST: {
+                unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
+                sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);   
+                
+                return sendedBytes;
+            }
+
+            default: { 
+                std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
+                return -1;
+            }
+        }
+    }
+    
+    return -1;
 }
 
 /**
  * Sends a message back to the connected client
  * @param message           contains generic header and payload specific content
  * @param messageLength     length of the complete message
+ * @return                  number of bytes written is returned,
+ *                          or -1 if error occurred
  */
-void DoIPServer::sendMessage(unsigned char* message, int messageLength) {
-    std::cout << "DoIPServer sends message with: " << messageLength << " bytes." << std::endl;
-    write(sockfd_sender, message, messageLength);
+int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
+    int result = write(sockfd_sender, message, messageLength);
+    return result;
 }
 
 
-void DoIPServer::sendUdpMessage(unsigned char* message, int messageLength) {
-    sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
-    
+int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength) {
+    int result = sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+    return result;
 }
 
 void DoIPServer::setEIDdefault(){
@@ -241,7 +253,7 @@ void DoIPServer::setFAR(const unsigned int inputFAR){
  * @param value     received payload
  * @param length    length of received payload
  */
-void DoIPServer::receiveDiagnosticPayload(unsigned char* value, int length) {
+void DoIPServer::receiveDiagnosticPayload(unsigned char* address, unsigned char* value, int length) {
 
     printf("DoiPServer received from server application: ");
     for(int i = 0; i < length; i++) {
@@ -249,17 +261,27 @@ void DoIPServer::receiveDiagnosticPayload(unsigned char* value, int length) {
     }
     printf("\n");
     
-    //sourceAddress = address of the doip server
-    unsigned char doipAddress [2] = { 0xE0, 0x00 };     //TODO: remove hardcoded values
-    
-    //targetAddress = address of the test client, which is already routed
-    unsigned char* message = createDiagnosticMessage(doipAddress, routedClientAddress, value, length);
-    
+    unsigned char* message = createDiagnosticMessage(address, routedClientAddress, value, length);  
     sendMessage(message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + length);
 }
 
-void DoIPServer::setMulticastGroup(const char* address)
-{
+/*
+ * Getter to the last received data
+ * @return  pointer to the received data array
+ */
+const unsigned char* DoIPServer::getData() {
+    return data;
+}
+
+/*
+ * Getter to the length of the last received data
+ * @return  length of received data
+ */
+int DoIPServer::getDataLength() const {
+    return dataLength;
+}
+
+void DoIPServer::setMulticastGroup(const char* address) {
     
     int loop = 1;
     
@@ -284,7 +306,33 @@ void DoIPServer::setMulticastGroup(const char* address)
     {
         std::cout <<"Setting Address Error" << std::endl;
     }
-    
 }
 
+/*
+ * Set the callback function for this doip server instance
+ * @cb  callback function
+ */
+void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn) {
+    diag_callback = dc;
+    diag_notification = dmn;
+}
 
+void DoIPServer::sendDiagnosticAck(PayloadType type, unsigned char ackCode) {
+    unsigned char data_TA [2] = { 0x0E, 0x00 };
+    unsigned char data_SA [2] = { 0xE0, 0x00 };
+    
+    unsigned char* message = createDiagnosticACK(type, data_SA, data_TA, ackCode);
+    sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
+}
+
+/**
+ * Prepares a generic header nack and sends it to the client
+ * @param ackCode       NACK-Code which will be included in the message
+ * @return              amount of bytes sended to the client
+ */
+int DoIPServer::sendNegativeAck(unsigned char ackCode) {
+    unsigned char* message = createGenericHeader(PayloadType::NEGATIVEACK, _NACKLength);
+    message[8] = ackCode;
+    int sendedBytes = sendMessage(message, _GenericHeaderLength + _NACKLength);
+    return sendedBytes;
+}
