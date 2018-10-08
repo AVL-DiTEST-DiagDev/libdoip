@@ -44,6 +44,8 @@ public:
     void setEID(const unsigned long inputEID);
     void setGID(const unsigned long inputGID);
     void setFAR(const unsigned int inputFAR);
+    
+    int sendVehicleAnnouncement();
 
 
 private:
@@ -60,7 +62,12 @@ private:
     unsigned char EID [6];
     unsigned char GID [6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char FurtherActionReq = 0x00;
-
+    
+    int A_DoIP_Announce_Num = 2;    
+    int A_DoIP_Announce_Interval = 10; //in seconds
+    
+    int broadcast = 1;
+    
     int sendMessage(unsigned char* message, int messageLenght);
     int sendUdpMessage(unsigned char* message, int messageLength);
     void setMulticastGroup(const char* address);

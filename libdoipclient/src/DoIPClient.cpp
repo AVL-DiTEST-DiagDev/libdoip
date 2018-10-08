@@ -31,7 +31,6 @@ void DoIPClient::startTcpConnection() {
 
 void DoIPClient::startUdpConnection(){
     
-    const char* ipAddr="127.0.0.1";
     _sockFd_udp= socket(AF_INET,SOCK_DGRAM, 0); 
     
     if(_sockFd_udp>= 0)
@@ -40,7 +39,16 @@ void DoIPClient::startUdpConnection(){
         
         _serverAddr.sin_family=AF_INET;
         _serverAddr.sin_port=htons(_serverPortNr);
-        inet_aton(ipAddr,&(_serverAddr.sin_addr)); 
+        _serverAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        
+        _clientAddr.sin_family=AF_INET;
+        _clientAddr.sin_port=htons(_serverPortNr);
+        _clientAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        
+        //binds the socket to any IP Address and the Port Number 13400
+        bind(_sockFd_udp, (struct sockaddr *)&_clientAddr, sizeof(_clientAddr));
+        
+        
     }
 }
 
@@ -199,7 +207,7 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
     {
         std::cout <<"Address set succesfully"<<std::endl;
     }
-     
+    
     int socketError = setsockopt(_sockFd_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
          
     if(socketError == 0)

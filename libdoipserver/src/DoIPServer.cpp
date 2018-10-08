@@ -22,14 +22,19 @@ void DoIPServer::setupSocket() {
 void DoIPServer::setupUdpSocket(){
     
     sockfd_receiver_udp = socket(AF_INET, SOCK_DGRAM, 0);
+    
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
+    clientAddress.sin_family = AF_INET;
+    clientAddress.sin_addr.s_addr=htonl(INADDR_ANY);
+    clientAddress.sin_port=htons(_ServerPort);
+    
     if(sockfd_receiver_udp < 0)
         std::cout << "Error setting up a udp socket" << std::endl;
     
-    //binds the socket to the address and port number
+    //binds the socket to any IP Address and the Port Number 13400
     bind(sockfd_receiver_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
     
     //setting the IP Address for Multicast
@@ -180,8 +185,9 @@ int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
 }
 
 
-int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength) {
+int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
     int result = sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+    
     return result;
 }
 
@@ -335,4 +341,46 @@ int DoIPServer::sendNegativeAck(unsigned char ackCode) {
     message[8] = ackCode;
     int sendedBytes = sendMessage(message, _GenericHeaderLength + _NACKLength);
     return sendedBytes;
+}
+
+int DoIPServer::sendVehicleAnnouncement() {
+    
+    const char* address = "255.255.255.255";
+    
+    int setAddressError = inet_aton(address,&(clientAddress.sin_addr));
+    
+    if(setAddressError != 0)
+    {
+        std::cout <<"Broadcast Address set succesfully"<<std::endl;
+    }
+    
+    int socketError = setsockopt(sockfd_receiver_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
+         
+    if(socketError == 0)
+    {
+        std::cout << "Broadcast Option set successfully" << std::endl;
+    }
+    
+    int sendedmessage;
+    
+    unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
+    
+    for(int i = 0; i < A_DoIP_Announce_Num; i++)
+    {
+        
+        sendedmessage = sendto(sockfd_receiver_udp, message, _GenericHeaderLength + _VIResponseLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+        
+        if(sendedmessage > 0)
+        {
+            std::cout<<"Sending Vehicle Announcement"<<std::endl;
+        }
+        else
+        {
+            std::cout<<"Failed Sending Vehicle Announcement"<<std::endl;
+        }   
+        sleep(A_DoIP_Announce_Interval);
+        
+    }
+    return sendedmessage;
+    
 }
