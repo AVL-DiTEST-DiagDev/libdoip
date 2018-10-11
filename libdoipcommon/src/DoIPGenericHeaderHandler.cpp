@@ -55,7 +55,7 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
     //Check Payload Type specific length
     switch(action.type) {
         case PayloadType::ROUTINGACTIVATIONREQUEST: {
-            if(dataLenght - _GenericHeaderLength != 7) {
+            if(dataLenght - _GenericHeaderLength != 7 || data[7] != 0x07) {
                 action.type = PayloadType::NEGATIVEACK;
                 action.value = 0x04;
                 return action;
@@ -64,7 +64,7 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
         }
 
         case PayloadType::VEHICLEIDENTREQUEST: { //PayloadTypeLength = 0
-            if(dataLenght - _GenericHeaderLength != 0) {
+            if(dataLenght - _GenericHeaderLength != 0 || data[7] != 0x00) {
                 action.type = PayloadType::NEGATIVEACK;
                 action.value = 0x04;
                 return action;
@@ -82,7 +82,7 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
         }
         
         case PayloadType::DIAGNOSTICPOSITIVEACK: {
-            if(dataLenght - _GenericHeaderLength != 5) {
+            if(dataLenght - _GenericHeaderLength != 5 || data[7] != 0x05) {
                 action.type = PayloadType::NEGATIVEACK;
                 action.value = 0x04;
             }
@@ -90,7 +90,7 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
         }
         
         case PayloadType::DIAGNOSTICNEGATIVEACK: {
-            if(dataLenght - _GenericHeaderLength != 5) {
+            if(dataLenght - _GenericHeaderLength != 5 || data[7] != 0x05) {
                 action.type = PayloadType::NEGATIVEACK;
                 action.value = 0x04;
             }
