@@ -164,6 +164,8 @@ void DoIPClient::receiveUdpMessage() {
     int readedBytes;
     readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_serverAddr, &length);
     
+  
+    
     for(int i=0;i<readedBytes;i++)
     {
        std::cout << (int)_receivedData[i] << std::endl;
@@ -292,7 +294,7 @@ void DoIPClient::displayVIResponseInformation()
     std::cout << "LogicalAddress: ";
     for(int i = 0; i < 2; i++)
     {
-        printf("%X", (int)LogicalAddressResult[i]);
+        printf("%02X", (int)LogicalAddressResult[i]);
     }
     std::cout << std::endl;
     
@@ -300,7 +302,7 @@ void DoIPClient::displayVIResponseInformation()
     std::cout << "EID: ";
     for(int i = 0; i < 6; i++)
     {
-        printf("%X", (int)EIDResult[i]);
+        printf("%02X", EIDResult[i]);
     }
     std::cout << std::endl;
     
@@ -308,13 +310,13 @@ void DoIPClient::displayVIResponseInformation()
     std::cout << "GID: ";
     for(int i = 0; i < 6; i++)
     {
-        printf("%X", (int)GIDResult[i]);
+        printf("%02X", (int)GIDResult[i]);
     }
     std::cout << std::endl;
     
     //output FurtherActionRequest
     std::cout << "FurtherActionRequest: ";
-    printf("%X", (int)FurtherActionReqResult);
+    printf("%02X", (int)FurtherActionReqResult);
     
     std::cout << std::endl;
 }

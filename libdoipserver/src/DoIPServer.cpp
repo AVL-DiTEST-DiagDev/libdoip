@@ -140,6 +140,11 @@ int DoIPServer::receiveUdpMessage(){
         int sendedBytes;
         switch(action.type) {
 
+            case PayloadType::VEHICLEIDENTRESPONSE:{    //server should not send a negative ACK if he receives the sended VehicleIdentificationAnnouncement
+                
+                return -1;
+            }
+            
             case PayloadType::NEGATIVEACK: {
                 //send NACK
                 unsigned char* message = createGenericHeader(action.type, _NACKLength);
@@ -219,12 +224,9 @@ void DoIPServer::setEIDdefault(){
     }
 }
 
-void DoIPServer::setVIN(const char* VINString){
+void DoIPServer::setVIN( std::string VINString){
     
-    for(int i = 0; i < 18; i++)
-    {
-        VIN[i] = (unsigned char)VINString[i];
-    }
+    VIN = VINString;
 }
 
 void DoIPServer::setLogicalAddress(const unsigned int inputLogAdd){
@@ -232,7 +234,7 @@ void DoIPServer::setLogicalAddress(const unsigned int inputLogAdd){
     LogicalAddress[1] = inputLogAdd & 0xFF;
 }
 
-void DoIPServer::setEID(const unsigned long inputEID){
+void DoIPServer::setEID(const uint64_t inputEID){
     EID[0] = (inputEID >> 40) &0xFF;
     EID[1] = (inputEID >> 32) &0xFF;
     EID[2] = (inputEID >> 24) &0xFF;
@@ -241,7 +243,7 @@ void DoIPServer::setEID(const unsigned long inputEID){
     EID[5] = inputEID  & 0xFF;
 }
 
-void DoIPServer::setGID(const unsigned long inputGID){
+void DoIPServer::setGID(const uint64_t inputGID){
     GID[0] = (inputGID >> 40) &0xFF;
     GID[1] = (inputGID >> 32) &0xFF;
     GID[2] = (inputGID >> 24) &0xFF;
@@ -253,6 +255,16 @@ void DoIPServer::setGID(const unsigned long inputGID){
 void DoIPServer::setFAR(const unsigned int inputFAR){
     FurtherActionReq = inputFAR & 0xFF;
 }
+
+void DoIPServer::setA_DoIP_Announce_Num(int Num){
+    A_DoIP_Announce_Num = Num;
+}
+
+void DoIPServer::setA_DoIP_Announce_Interval(int Interval){
+    A_DoIP_Announce_Interval = Interval;
+}
+
+
 
 /*
  * Receive diagnostic message payload from the server application, which will be sended back to the client
@@ -378,7 +390,7 @@ int DoIPServer::sendVehicleAnnouncement() {
         {
             std::cout<<"Failed Sending Vehicle Announcement"<<std::endl;
         }   
-        sleep(A_DoIP_Announce_Interval);
+        usleep(A_DoIP_Announce_Interval*1000);
         
     }
     return sendedmessage;
