@@ -31,7 +31,6 @@ void DoIPClient::startTcpConnection() {
 
 void DoIPClient::startUdpConnection(){
     
-    const char* ipAddr="127.0.0.1";
     _sockFd_udp= socket(AF_INET,SOCK_DGRAM, 0); 
     
     if(_sockFd_udp>= 0)
@@ -40,7 +39,16 @@ void DoIPClient::startUdpConnection(){
         
         _serverAddr.sin_family=AF_INET;
         _serverAddr.sin_port=htons(_serverPortNr);
-        inet_aton(ipAddr,&(_serverAddr.sin_addr)); 
+        _serverAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        
+        _clientAddr.sin_family=AF_INET;
+        _clientAddr.sin_port=htons(_serverPortNr);
+        _clientAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        
+        //binds the socket to any IP Address and the Port Number 13400
+        bind(_sockFd_udp, (struct sockaddr *)&_clientAddr, sizeof(_clientAddr));
+        
+        
     }
 }
 
@@ -156,6 +164,8 @@ void DoIPClient::receiveUdpMessage() {
     int readedBytes;
     readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_serverAddr, &length);
     
+  
+    
     for(int i=0;i<readedBytes;i++)
     {
        std::cout << (int)_receivedData[i] << std::endl;
@@ -199,7 +209,7 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
     {
         std::cout <<"Address set succesfully"<<std::endl;
     }
-     
+    
     int socketError = setsockopt(_sockFd_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
          
     if(socketError == 0)
@@ -284,7 +294,7 @@ void DoIPClient::displayVIResponseInformation()
     std::cout << "LogicalAddress: ";
     for(int i = 0; i < 2; i++)
     {
-        printf("%X", (int)LogicalAddressResult[i]);
+        printf("%02X", (int)LogicalAddressResult[i]);
     }
     std::cout << std::endl;
     
@@ -292,7 +302,7 @@ void DoIPClient::displayVIResponseInformation()
     std::cout << "EID: ";
     for(int i = 0; i < 6; i++)
     {
-        printf("%X", (int)EIDResult[i]);
+        printf("%02X", EIDResult[i]);
     }
     std::cout << std::endl;
     
@@ -300,13 +310,13 @@ void DoIPClient::displayVIResponseInformation()
     std::cout << "GID: ";
     for(int i = 0; i < 6; i++)
     {
-        printf("%X", (int)GIDResult[i]);
+        printf("%02X", (int)GIDResult[i]);
     }
     std::cout << std::endl;
     
     //output FurtherActionRequest
     std::cout << "FurtherActionRequest: ";
-    printf("%X", (int)FurtherActionReqResult);
+    printf("%02X", (int)FurtherActionReqResult);
     
     std::cout << std::endl;
 }

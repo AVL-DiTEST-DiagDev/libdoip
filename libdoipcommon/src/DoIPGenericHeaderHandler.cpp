@@ -24,6 +24,9 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
     if(data[2] == 0x00 && data[3] == 0x05) {			//Value of RoutingActivationRequest = 0x0005
         action.type = PayloadType::ROUTINGACTIVATIONREQUEST;
     }
+    else if(data[2] == 0x00 && data[3] == 0x04){
+        action.type = PayloadType::VEHICLEIDENTRESPONSE;
+    }
     else if(data[2] == 0x00 && data[3] == 0x01) {		//Value of Vehicle Identification Request = 0x0001
         action.type = PayloadType::VEHICLEIDENTREQUEST;
     }
@@ -65,6 +68,15 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
 
         case PayloadType::VEHICLEIDENTREQUEST: { //PayloadTypeLength = 0
             if(dataLenght - _GenericHeaderLength != 0) {
+                action.type = PayloadType::NEGATIVEACK;
+                action.value = 0x04;
+                return action;
+            }
+            break;
+        }
+        
+        case PayloadType::VEHICLEIDENTRESPONSE:{
+            if(dataLenght - _GenericHeaderLength != 32) {
                 action.type = PayloadType::NEGATIVEACK;
                 action.value = 0x04;
                 return action;

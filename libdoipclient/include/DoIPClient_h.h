@@ -38,7 +38,7 @@ private:
     unsigned char _receivedData[_maxDataSize];
     int _sockFd, _sockFd_udp, _connected;
     int broadcast = 1;
-    struct sockaddr_in _serverAddr; 
+    struct sockaddr_in _serverAddr, _clientAddr; 
     
     unsigned char VINResult [17];
     unsigned char LogicalAddressResult [2];

@@ -2,9 +2,10 @@
 #include <iostream>
 
 
-unsigned char* createVehicleIdentificationResponse(char* VIN,unsigned char* LogicalAddress, 
+
+unsigned char* createVehicleIdentificationResponse(std::string VIN,unsigned char* LogicalAddress, 
                                                     unsigned char* EID, unsigned char* GID,
-                                                    unsigned char FurtherActionReq)
+                                                    unsigned char FurtherActionReq) //also used für the Vehicle Announcement
 {
     unsigned char* message = createGenericHeader(PayloadType::VEHICLEIDENTRESPONSE, _VIResponseLength);
     

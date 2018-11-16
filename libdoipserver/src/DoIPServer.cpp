@@ -22,14 +22,19 @@ void DoIPServer::setupSocket() {
 void DoIPServer::setupUdpSocket(){
     
     sockfd_receiver_udp = socket(AF_INET, SOCK_DGRAM, 0);
+    
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
+    clientAddress.sin_family = AF_INET;
+    clientAddress.sin_addr.s_addr=htonl(INADDR_ANY);
+    clientAddress.sin_port=htons(_ServerPort);
+    
     if(sockfd_receiver_udp < 0)
         std::cout << "Error setting up a udp socket" << std::endl;
     
-    //binds the socket to the address and port number
+    //binds the socket to any IP Address and the Port Number 13400
     bind(sockfd_receiver_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
     
     //setting the IP Address for Multicast
@@ -135,6 +140,11 @@ int DoIPServer::receiveUdpMessage(){
         int sendedBytes;
         switch(action.type) {
 
+            case PayloadType::VEHICLEIDENTRESPONSE:{    //server should not send a negative ACK if he receives the sended VehicleIdentificationAnnouncement
+                
+                return -1;
+            }
+            
             case PayloadType::NEGATIVEACK: {
                 //send NACK
                 unsigned char* message = createGenericHeader(action.type, _NACKLength);
@@ -180,8 +190,9 @@ int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
 }
 
 
-int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength) {
+int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
     int result = sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+    
     return result;
 }
 
@@ -213,12 +224,9 @@ void DoIPServer::setEIDdefault(){
     }
 }
 
-void DoIPServer::setVIN(const char* VINString){
+void DoIPServer::setVIN( std::string VINString){
     
-    for(int i = 0; i < 18; i++)
-    {
-        VIN[i] = (unsigned char)VINString[i];
-    }
+    VIN = VINString;
 }
 
 void DoIPServer::setLogicalAddress(const unsigned int inputLogAdd){
@@ -226,7 +234,7 @@ void DoIPServer::setLogicalAddress(const unsigned int inputLogAdd){
     LogicalAddress[1] = inputLogAdd & 0xFF;
 }
 
-void DoIPServer::setEID(const unsigned long inputEID){
+void DoIPServer::setEID(const uint64_t inputEID){
     EID[0] = (inputEID >> 40) &0xFF;
     EID[1] = (inputEID >> 32) &0xFF;
     EID[2] = (inputEID >> 24) &0xFF;
@@ -235,7 +243,7 @@ void DoIPServer::setEID(const unsigned long inputEID){
     EID[5] = inputEID  & 0xFF;
 }
 
-void DoIPServer::setGID(const unsigned long inputGID){
+void DoIPServer::setGID(const uint64_t inputGID){
     GID[0] = (inputGID >> 40) &0xFF;
     GID[1] = (inputGID >> 32) &0xFF;
     GID[2] = (inputGID >> 24) &0xFF;
@@ -247,6 +255,16 @@ void DoIPServer::setGID(const unsigned long inputGID){
 void DoIPServer::setFAR(const unsigned int inputFAR){
     FurtherActionReq = inputFAR & 0xFF;
 }
+
+void DoIPServer::setA_DoIP_Announce_Num(int Num){
+    A_DoIP_Announce_Num = Num;
+}
+
+void DoIPServer::setA_DoIP_Announce_Interval(int Interval){
+    A_DoIP_Announce_Interval = Interval;
+}
+
+
 
 /*
  * Receive diagnostic message payload from the server application, which will be sended back to the client
@@ -335,4 +353,46 @@ int DoIPServer::sendNegativeAck(unsigned char ackCode) {
     message[8] = ackCode;
     int sendedBytes = sendMessage(message, _GenericHeaderLength + _NACKLength);
     return sendedBytes;
+}
+
+int DoIPServer::sendVehicleAnnouncement() {
+    
+    const char* address = "255.255.255.255";
+    
+    int setAddressError = inet_aton(address,&(clientAddress.sin_addr));
+    
+    if(setAddressError != 0)
+    {
+        std::cout <<"Broadcast Address set succesfully"<<std::endl;
+    }
+    
+    int socketError = setsockopt(sockfd_receiver_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
+         
+    if(socketError == 0)
+    {
+        std::cout << "Broadcast Option set successfully" << std::endl;
+    }
+    
+    int sendedmessage;
+    
+    unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
+    
+    for(int i = 0; i < A_DoIP_Announce_Num; i++)
+    {
+        
+        sendedmessage = sendto(sockfd_receiver_udp, message, _GenericHeaderLength + _VIResponseLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+        
+        if(sendedmessage > 0)
+        {
+            std::cout<<"Sending Vehicle Announcement"<<std::endl;
+        }
+        else
+        {
+            std::cout<<"Failed Sending Vehicle Announcement"<<std::endl;
+        }   
+        usleep(A_DoIP_Announce_Interval*1000);
+        
+    }
+    return sendedmessage;
+    
 }
