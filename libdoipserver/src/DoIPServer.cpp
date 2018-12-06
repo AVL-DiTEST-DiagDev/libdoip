@@ -54,6 +54,15 @@ void DoIPServer::closeUdpSocket() {
     close(sockfd_receiver_udp);
 }
 
+
+void DoIPServer::triggerDisconnection() {
+    close(sockfd_sender);
+    std::cout << "Die Verbindung zum Client wurde abgebrochen" << std::endl;
+    usleep(50000);
+    sockfd_sender = accept(sockfd_receiver, (struct sockaddr*) NULL, NULL);
+    std::cout << "Die Verbindung zum Client wurde wiederhergestellt" << std::endl;
+}
+
 /*
  * Receives a message from the client and determine how to process the message
  * @return      amount of bytes which were send back to client

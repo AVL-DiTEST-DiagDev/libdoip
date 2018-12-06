@@ -32,6 +32,7 @@ public:
     void receiveDiagnosticPayload(unsigned char* address, unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
+    void triggerDisconnection();
     void sendDiagnosticAck(PayloadType type, unsigned char ackCode);
     int sendNegativeAck(unsigned char ackCode);
 

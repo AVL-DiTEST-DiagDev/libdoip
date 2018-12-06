@@ -63,6 +63,14 @@ void DoIPClient::closeUdpConnection(){
     close(_sockFd_udp);
 }
 
+
+
+void DoIPClient::reconnectServer(){
+    closeTcpConnection();
+    startTcpConnection();
+}
+
+
 /*
  *Build the Routing-Activation-Request for server
  */
