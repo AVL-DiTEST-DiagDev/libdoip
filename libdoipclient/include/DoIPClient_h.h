@@ -30,6 +30,7 @@ public:
     void displayVIResponseInformation();
     void closeTcpConnection();
     void closeUdpConnection();
+    void reconnectServer();
 
     int getSockFd();
     int getConnected();
