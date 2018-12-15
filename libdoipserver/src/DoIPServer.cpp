@@ -56,11 +56,28 @@ void DoIPServer::closeUdpSocket() {
 
 
 void DoIPServer::triggerDisconnection() {
-    close(sockfd_sender);
-    std::cout << "Die Verbindung zum Client wurde abgebrochen" << std::endl;
-    usleep(50000);
-    sockfd_sender = accept(sockfd_receiver, (struct sockaddr*) NULL, NULL);
-    std::cout << "Die Verbindung zum Client wurde wiederhergestellt" << std::endl;
+    
+    bool socketsClosed = false;
+    
+    std::cout << "Trenne die Verbindung zum Client" << std::endl;
+    
+    while(socketsClosed == false)
+    {
+        int tcpSenderClosed = close(sockfd_sender);
+        int tcpReceiverClosed = close(sockfd_receiver);
+    
+        if(tcpSenderClosed == 0 && tcpReceiverClosed == 0)
+        {
+            socketsClosed = true;
+            
+            std::cout << "Verbindung zum Client wurde getrennt" << std::endl;
+        }
+        else
+        {
+            std::cout << "Trennen fehlgeschlagen. Versuche es erneut..." << std::endl;
+        }
+    }
+    
 }
 
 /*
@@ -200,6 +217,7 @@ int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
 
 
 int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
+    
     int result = sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
     
     return result;
@@ -365,6 +383,7 @@ int DoIPServer::sendNegativeAck(unsigned char ackCode) {
 }
 
 int DoIPServer::sendVehicleAnnouncement() {
+    
     
     const char* address = "255.255.255.255";
     
