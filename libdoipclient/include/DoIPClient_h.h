@@ -50,6 +50,8 @@ private:
     const std::pair<int, unsigned char*>* buildRoutingActivationRequest();
     const std::pair<int, unsigned char*>* buildVehicleIdentificationRequest();
     void parseVIResponseInformation(unsigned char* data);
+    
+    int emptyMessageCounter = 0;
 };
 
 

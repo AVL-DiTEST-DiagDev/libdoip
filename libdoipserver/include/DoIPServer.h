@@ -17,7 +17,7 @@
 #include "DiagnosticMessageHandler.h"
 
 const int _ServerPort = 13400;
-const int _MaxDataSize = 64;   
+const int _MaxDataSize = 64;  
 
 class DoIPServer {
 
@@ -61,6 +61,7 @@ private:
     int sockfd_receiver, sockfd_receiver_udp, sockfd_sender;
     struct sockaddr_in serverAddress, clientAddress;
     unsigned char* routedClientAddress;
+    
     
     std::string VIN = "00000000000000000";
     unsigned char LogicalAddress [2] = {0x00, 0x00};

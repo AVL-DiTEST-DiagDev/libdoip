@@ -7,6 +7,7 @@
 void DoIPServer::setupSocket() {
     
     sockfd_receiver = socket(AF_INET, SOCK_STREAM, 0);
+    
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
@@ -59,22 +60,23 @@ void DoIPServer::triggerDisconnection() {
     
     bool socketsClosed = false;
     
-    std::cout << "Trenne die Verbindung zum Client" << std::endl;
+    std::cout << "Disconnecting Client from Server" << std::endl;
     
     while(socketsClosed == false)
     {
         int tcpSenderClosed = close(sockfd_sender);
-        int tcpReceiverClosed = close(sockfd_receiver);
-    
-        if(tcpSenderClosed == 0 && tcpReceiverClosed == 0)
+        
+        if(tcpSenderClosed == 0)
         {
             socketsClosed = true;
             
-            std::cout << "Verbindung zum Client wurde getrennt" << std::endl;
+            std::cout << "Connecting to the Client" << std::endl;
+            
+            sockfd_sender = accept(sockfd_receiver, (struct sockaddr*) NULL, NULL);      
         }
         else
         {
-            std::cout << "Trennen fehlgeschlagen. Versuche es erneut..." << std::endl;
+            std::cout << "Disconnecting failed. Try Again" << std::endl;
         }
     }
     
@@ -383,7 +385,6 @@ int DoIPServer::sendNegativeAck(unsigned char ackCode) {
 }
 
 int DoIPServer::sendVehicleAnnouncement() {
-    
     
     const char* address = "255.255.255.255";
     

@@ -11,7 +11,7 @@ void DoIPClient::startTcpConnection() {
     
     if(_sockFd>=0)
     {
-        std::cout << "Client-Socket wurde angelegt." << std::endl;
+        std::cout << "Client TCP-Socket created successfully" << std::endl;
     
         _serverAddr.sin_family=AF_INET;
         _serverAddr.sin_port=htons(_serverPortNr);
@@ -23,7 +23,7 @@ void DoIPClient::startTcpConnection() {
             if(_connected!=-1)
             {
                 connectedFlag=true;
-                std::cout << "Die Verbindung zum Server wurde hergestellt" << std::endl;
+                std::cout << "Connected to the server" << std::endl;
             }
         }  
     }   
@@ -132,7 +132,20 @@ void DoIPClient::sendDiagnosticMessage(unsigned char* targetAddress, unsigned ch
  */
 void DoIPClient::receiveMessage() {
     
-    int readedBytes = read(_sockFd,_receivedData,_maxDataSize);
+    int readedBytes = recv(_sockFd,_receivedData,_maxDataSize, 0);
+    
+    if(!readedBytes) //if server is disconnected from client; client gets empty messages
+    {
+        emptyMessageCounter++;
+        
+        if(emptyMessageCounter == 5)
+        {
+            std::cout << "Received to many empty messages. Reconnect TCP connection" << std::endl;
+            emptyMessageCounter = 0;
+            reconnectServer();
+        }
+        return;
+    }
 	
     printf("Client received: ");
     for(int i = 0; i < readedBytes; i++)
@@ -172,13 +185,7 @@ void DoIPClient::receiveUdpMessage() {
     int readedBytes;
     readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_serverAddr, &length);
     
-  
-    
-    for(int i=0;i<readedBytes;i++)
-    {
-       std::cout << (int)_receivedData[i] << std::endl;
-    } 
-    
+   
     if(_receivedData[2] == 0x00 && _receivedData[3] == 0x04)
     {
         parseVIResponseInformation(_receivedData);
@@ -216,6 +223,10 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
     if(setAddressError != 0)
     {
         std::cout <<"Address set succesfully"<<std::endl;
+    }
+    else
+    {
+        std::cout << "Could not set Address. Try again" << std::endl;
     }
     
     int socketError = setsockopt(_sockFd_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
