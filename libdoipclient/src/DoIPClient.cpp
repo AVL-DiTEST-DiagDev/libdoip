@@ -119,6 +119,17 @@ void DoIPClient::sendDiagnosticMessage(unsigned char* targetAddress, unsigned ch
     write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);
 }
 
+/**
+ * Sends a alive check response containing the clients source address to the server
+ */
+void DoIPClient::sendAliveCheckResponse() {
+    int responseLength = 2;
+    unsigned char* message = createGenericHeader(PayloadType::ALIVECHECKRESPONSE, responseLength);
+    message[8] = sourceAddress[0];
+    message[9] = sourceAddress[1];
+    write(_sockFd, message, _GenericHeaderLength + responseLength);
+}
+
 /*
  * Receive a message from server
  */
@@ -225,6 +236,15 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
     {
         std::cout << "Sending Vehicle Identification Request" << std::endl;
     }
+}
+
+/**
+ * Sets the source address for this client
+ * @param address   source address for the client
+ */
+void DoIPClient::setSourceAddress(unsigned char* address) {
+    sourceAddress[0] = address[0];
+    sourceAddress[1] = address[1];
 }
 
 /*

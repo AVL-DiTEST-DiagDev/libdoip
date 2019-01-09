@@ -164,6 +164,12 @@ unsigned char* createGenericHeader(PayloadType type, uint32_t length) {
             header[3] = 0x03;
             break;
         }
+        
+        case PayloadType::ALIVECHECKRESPONSE: {
+            header[2] = 0x00;
+            header[3] = 0x08;
+            break;
+        }
 
         default: {
             std::cerr << "not handled payload type occured in createGenericHeader()" << std::endl;
