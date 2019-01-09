@@ -32,7 +32,10 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
     }
     else if(data[2] == 0x80 && data[3] == 0x01) {		//Value of Diagnose Message = 0x8001
         action.type = PayloadType::DIAGNOSTICMESSAGE;
-    } 
+    }
+    else if(data[2] == 0x00 && data[3] == 0x08) {
+        action.type = PayloadType::ALIVECHECKRESPONSE;
+    }
     else if(data[2] == 0x80 && data[3] == 0x02) {                   //Value of Diagnostic Message positive ack =
         action.type = PayloadType::DIAGNOSTICPOSITIVEACK;
     } 
@@ -91,6 +94,15 @@ GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
                 return action;
             }
             break;	
+        }
+        
+        case PayloadType::ALIVECHECKRESPONSE: {
+            if(dataLenght - _GenericHeaderLength != 2) {
+                action.type = PayloadType::NEGATIVEACK;
+                action.value = 0x04;
+                return action;
+            }
+            break;
         }
         
         case PayloadType::DIAGNOSTICPOSITIVEACK: {
