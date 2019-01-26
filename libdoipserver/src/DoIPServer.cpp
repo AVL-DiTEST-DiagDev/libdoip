@@ -7,6 +7,7 @@
 void DoIPServer::setupSocket() {
     
     sockfd_receiver = socket(AF_INET, SOCK_STREAM, 0);
+    
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
@@ -52,6 +53,33 @@ void DoIPServer::closeSocket() {
 
 void DoIPServer::closeUdpSocket() {
     close(sockfd_receiver_udp);
+}
+
+
+void DoIPServer::triggerDisconnection() {
+    
+    bool socketsClosed = false;
+    
+    std::cout << "Disconnecting Client from Server" << std::endl;
+    
+    while(socketsClosed == false)
+    {
+        int tcpSenderClosed = close(sockfd_sender);
+        
+        if(tcpSenderClosed == 0)
+        {
+            socketsClosed = true;
+            
+            std::cout << "Connecting to the Client" << std::endl;
+            
+            sockfd_sender = accept(sockfd_receiver, (struct sockaddr*) NULL, NULL);      
+        }
+        else
+        {
+            std::cout << "Disconnecting failed. Try Again" << std::endl;
+        }
+    }
+    
 }
 
 /*
@@ -191,6 +219,7 @@ int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
 
 
 int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
+    
     int result = sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
     
     return result;
