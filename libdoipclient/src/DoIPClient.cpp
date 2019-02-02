@@ -185,8 +185,7 @@ void DoIPClient::receiveUdpMessage() {
     int readedBytes;
     readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_serverAddr, &length);
     
-   
-    if(_receivedData[2] == 0x00 && _receivedData[3] == 0x04)
+    if(PayloadType::VEHICLEIDENTRESPONSE == parseGenericHeader(_receivedData, readedBytes).type)
     {
         parseVIResponseInformation(_receivedData);
     }
