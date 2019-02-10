@@ -17,7 +17,9 @@
 #include "DiagnosticMessageHandler.h"
 
 const int _ServerPort = 13400;
+
 const unsigned int _MaxDataSize = 4294967294;
+
 
 class DoIPServer {
 
@@ -33,7 +35,11 @@ public:
     void receiveDiagnosticPayload(unsigned char* address, unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
+
     void sendDiagnosticAck(bool ackType, unsigned char ackCode);
+
+    void triggerDisconnection();
+
     int sendNegativeAck(unsigned char ackCode);
 
     const unsigned char* getData();
@@ -61,6 +67,7 @@ private:
     int server_socket_tcp, server_socket_udp, client_socket_tcp;
     struct sockaddr_in serverAddress, clientAddress;
     unsigned char* routedClientAddress;
+    
     
     std::string VIN = "00000000000000000";
     unsigned char LogicalAddress [2] = {0x00, 0x00};
