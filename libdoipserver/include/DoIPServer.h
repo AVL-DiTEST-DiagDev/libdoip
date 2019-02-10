@@ -15,6 +15,9 @@
 #include "DoIPGenericHeaderHandler.h"
 #include "RoutingActivationHandler.h"
 #include "DiagnosticMessageHandler.h"
+#include "AliveCheckTimer.h"
+
+using CloseConnectionCallback = std::function<void()>;
 
 const int _ServerPort = 13400;
 const unsigned int _MaxDataSize = 4294967294;
@@ -24,7 +27,7 @@ class DoIPServer {
 public:
     DoIPServer() = default;
     DoIPServer(DiagnosticCallback diag_callback): diag_callback{diag_callback} { };
-    void setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn);              
+    void setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn, CloseConnectionCallback ccb);                       
     void setupTcpSocket();
     void listenTcpConnection();
     void setupUdpSocket();
@@ -49,6 +52,7 @@ public:
     void setEID(const uint64_t inputEID);
     void setGID(const uint64_t inputGID);
     void setFAR(const unsigned int inputFAR);
+    void setGeneralInactivityTime(const uint16_t seconds);
     
     void setA_DoIP_Announce_Num(int Num);
     
@@ -58,8 +62,11 @@ public:
 
 
 private:
+    AliveCheckTimer aliveCheckTimer;
     DiagnosticCallback diag_callback;
+    CloseConnectionCallback close_connection;
     DiagnosticMessageNotification notify_application;
+
     unsigned char data[_MaxDataSize];
     int dataLength;
     int server_socket_tcp, server_socket_udp, client_socket_tcp;
@@ -81,7 +88,7 @@ private:
     int sendMessage(unsigned char* message, int messageLenght);
     int sendUdpMessage(unsigned char* message, int messageLength);
     void setMulticastGroup(const char* address);
-
+    void aliveCheckTimeout();
 
 };
 
