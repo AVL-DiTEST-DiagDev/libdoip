@@ -84,6 +84,7 @@ private:
     int sendUdpMessage(unsigned char* message, int messageLength);
     void setMulticastGroup(const char* address);
 
+    int reactToReceivedTcpMessage(GenericHeaderAction action);
 
 };
 

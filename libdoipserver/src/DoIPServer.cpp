@@ -33,7 +33,7 @@ void DoIPServer::setupUdpSocket(){
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
-    if(sockfd_receiver_udp < 0)
+    if(server_socket_udp < 0)
         std::cout << "Error setting up a udp socket" << std::endl;
     
     //binds the socket to any IP Address and the Port Number 13400
@@ -65,7 +65,7 @@ void DoIPServer::triggerDisconnection() {
     
     while(socketsClosed == false)
     {
-        int tcpSenderClosed = close(sockfd_sender);
+        int tcpSenderClosed = close(client_socket_tcp);
         
         if(tcpSenderClosed == 0)
         {
@@ -73,7 +73,7 @@ void DoIPServer::triggerDisconnection() {
             
             std::cout << "Connecting to the Client" << std::endl;
             
-            sockfd_sender = accept(sockfd_receiver, (struct sockaddr*) NULL, NULL);      
+            client_socket_tcp = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);      
         }
         else
         {
@@ -163,7 +163,7 @@ int DoIPServer::receiveUdpMessage(){
     
 
     unsigned int length = sizeof(serverAddress);   
-    int readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
+    int readedBytes = recvfrom(server_socket_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
     if(readedBytes > 0) {
         dataLength = readedBytes;
@@ -229,7 +229,7 @@ int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //s
     clientAddress.sin_port = serverAddress.sin_port;
     clientAddress.sin_addr.s_addr = serverAddress.sin_addr.s_addr;
     
-    int result = sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+    int result = sendto(server_socket_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
     
     return result;
 }
