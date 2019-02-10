@@ -1,5 +1,6 @@
 #include "DiagnosticMessageHandler.h"
 #include <iostream>
+#include <cstring>
 
 /**
  * Checks if a received Diagnostic Message is valid
@@ -11,37 +12,47 @@
 unsigned char parseDiagnosticMessage(DiagnosticCallback cb, unsigned char sourceAddress [2],
                                     unsigned char data[64], int diagMessageLength) {
     
-    //Check if the received SA is registered on the socket
-    if(data[8] != sourceAddress[0] || data[9] != sourceAddress[1]) {
-        //SA of received message is not registered on this TCP_DATA socket
-        return 0x02;
-    }
+    if(diagMessageLength >= _DiagnosticMessageMinimumLength) {
+        //Check if the received SA is registered on the socket
+        if(data[8] != sourceAddress[0] || data[9] != sourceAddress[1]) {
+            //SA of received message is not registered on this TCP_DATA socket
+            return 0x02;
+        }
 
-    //Pass the diagnostic message to the target network/transport layer
-    unsigned char target_address [2] = {data[10], data[11]};
-    
-    int cb_message_length = diagMessageLength - _DiagnosticMessageMinimumLength;
-    unsigned char* cb_message = new unsigned char[cb_message_length];
-    
-    for(int i = _DiagnosticMessageMinimumLength; i < diagMessageLength; i++) {
-        cb_message[i - _DiagnosticMessageMinimumLength] = data[8+ i];
-    }
-    
-    cb(target_address, cb_message, cb_message_length);
+        //Pass the diagnostic message to the target network/transport layer
+        unsigned char target_address [2] = {data[10], data[11]};
 
-    //return positive ack code
-    return 0x00;
+        int cb_message_length = diagMessageLength - _DiagnosticMessageMinimumLength;
+        unsigned char* cb_message = new unsigned char[cb_message_length];
+
+        for(int i = _DiagnosticMessageMinimumLength; i < diagMessageLength; i++) {
+            cb_message[i - _DiagnosticMessageMinimumLength] = data[8+ i];
+        }
+
+        cb(target_address, cb_message, cb_message_length);
+
+        //return positive ack code
+        return 0x00;
+    }
+    return 0x03;
 }
 
 /**
  * Creates a diagnostic message positive/negative acknowledgment message
- * @param type                  defines positive/negative payload type
+ * @param type                  defines positive/negative acknowledge type
  * @param sourceAddress		logical address of the receiver of the previous diagnostic message
  * @param targetAddress		logical address of the sender of the previous diagnostic message
  * @param responseCode		positive or negative acknowledge code
+ * @return pointer to the created diagnostic message acknowledge
  */
-unsigned char* createDiagnosticACK(PayloadType type, unsigned char sourceAddress [2], 
+unsigned char* createDiagnosticACK(bool ackType, unsigned char sourceAddress [2], 
                                     unsigned char targetAddress [2], unsigned char responseCode) {
+    
+    PayloadType type;
+    if(ackType)
+        type = PayloadType::DIAGNOSTICPOSITIVEACK;
+    else
+        type = PayloadType::DIAGNOSTICNEGATIVEACK;
     
     unsigned char* message = createGenericHeader(type, _DiagnosticPositiveACKLength);
 
@@ -63,7 +74,7 @@ unsigned char* createDiagnosticACK(PayloadType type, unsigned char sourceAddress
  * Creates a complete diagnostic message
  * @param sourceAddress		logical address of the sender of a diagnostic message
  * @param targetAddress		logical address of the receiver of a diagnostic message
- * @param userData			actual diagnostic data
+ * @param userData		actual diagnostic data
  * @param userDataLength	length of diagnostic data
  */
 unsigned char* createDiagnosticMessage(unsigned char sourceAddress [2], unsigned char targetAddress [2],

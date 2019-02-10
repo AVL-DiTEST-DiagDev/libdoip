@@ -11,7 +11,9 @@ void DoIPClient::startTcpConnection() {
     
     if(_sockFd>=0)
     {
+
         std::cout << "Client TCP-Socket created successfully" << std::endl;
+
     
         _serverAddr.sin_family=AF_INET;
         _serverAddr.sin_port=htons(_serverPortNr);
@@ -23,7 +25,9 @@ void DoIPClient::startTcpConnection() {
             if(_connected!=-1)
             {
                 connectedFlag=true;
-                std::cout << "Connected to the server" << std::endl;
+
+                std::cout << "Connection to server established" << std::endl;
+
             }
         }  
     }   

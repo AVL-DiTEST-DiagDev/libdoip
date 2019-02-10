@@ -1,28 +1,33 @@
 #include "DoIPServer.h"
 
 /*
- * Set up a socket till the point where the server waits till a client
- * approaches to make a connection
+ * Set up a tcp socket, so the socket is ready to accept a connection 
  */
-void DoIPServer::setupSocket() {
+void DoIPServer::setupTcpSocket() {
     
-    sockfd_receiver = socket(AF_INET, SOCK_STREAM, 0);
-    
+    server_socket_tcp = socket(AF_INET, SOCK_STREAM, 0);
+
+
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
     //binds the socket to the address and port number
-    bind(sockfd_receiver, (struct sockaddr *)&serverAddress, sizeof(serverAddress));     
-    //waits till client approach to make connection
-    listen(sockfd_receiver, 5);                                                          
-    
-    sockfd_sender = accept(sockfd_receiver, (struct sockaddr*) NULL, NULL);
+    bind(server_socket_tcp, (struct sockaddr *)&serverAddress, sizeof(serverAddress));     
+}
+
+/*
+ *  Listen till a client attempts a connection and accepts it
+ */
+void DoIPServer::listenTcpConnection() {
+     //waits till client approach to make connection
+    listen(server_socket_tcp, 5);                                                          
+    client_socket_tcp = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);
 }
 
 void DoIPServer::setupUdpSocket(){
     
-    sockfd_receiver_udp = socket(AF_INET, SOCK_DGRAM, 0);
+    server_socket_udp = socket(AF_INET, SOCK_DGRAM, 0);
     
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -32,7 +37,7 @@ void DoIPServer::setupUdpSocket(){
         std::cout << "Error setting up a udp socket" << std::endl;
     
     //binds the socket to any IP Address and the Port Number 13400
-    bind(sockfd_receiver_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
+    bind(server_socket_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
     
     //setting the IP Address for Multicast
     setMulticastGroup("224.0.0.2");
@@ -43,12 +48,12 @@ void DoIPServer::setupUdpSocket(){
  * Closes the socket for this server
  */
 void DoIPServer::closeSocket() {
-    close(sockfd_receiver);
-    close(sockfd_sender);
+    close(server_socket_tcp);
+    close(client_socket_tcp);
 }
 
 void DoIPServer::closeUdpSocket() {
-    close(sockfd_receiver_udp);
+    close(server_socket_udp);
 }
 
 
@@ -85,8 +90,8 @@ void DoIPServer::triggerDisconnection() {
  */
 int DoIPServer::receiveMessage() {
 
-    int readedBytes = recv(sockfd_sender, data, _MaxDataSize, 0);
-
+    int readedBytes = recv(client_socket_tcp, data, _MaxDataSize, 0);
+    
     if(readedBytes > 0) {
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
@@ -97,7 +102,8 @@ int DoIPServer::receiveMessage() {
                 //send NACK
                 sendedBytes = sendNegativeAck(action.value);
                 
-                if(action.value == 0x00 || action.value == 0x04) {
+                if(action.value == _IncorrectPatternFormatCode || 
+                        action.value == _InvalidPayloadLengthCode) {
                     closeSocket();
                     return -1;
                 }
@@ -113,7 +119,8 @@ int DoIPServer::receiveMessage() {
                 unsigned char* message = createRoutingActivationResponse(clientAddress, result);
                 sendedBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
                 
-                if(result == 0x00 || result == 0x06) {
+                if(result == _UnknownSourceAddressCode || 
+                        result == _UnsupportedRoutingTypeCode) {
                     closeSocket();
                     return -1;
                 } else {
@@ -129,7 +136,7 @@ int DoIPServer::receiveMessage() {
             case PayloadType::DIAGNOSTICMESSAGE: {
                               
                 unsigned char target_address [2] = {data[10], data[11]};           
-                bool ack = diag_notification(target_address);
+                bool ack = notify_application(target_address);
                 
                 if(ack)
                     parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
@@ -154,6 +161,7 @@ int DoIPServer::receiveMessage() {
  */
 int DoIPServer::receiveUdpMessage(){
     
+
     unsigned int length = sizeof(serverAddress);   
     int readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
@@ -209,12 +217,13 @@ int DoIPServer::receiveUdpMessage(){
  *                          or -1 if error occurred
  */
 int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
-    int result = write(sockfd_sender, message, messageLength);
+    int result = write(client_socket_tcp, message, messageLength);
     return result;
 }
 
 
 int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
+
     
     //if the server receives a message from a client, than the response should be send back to the client address and port
     clientAddress.sin_port = serverAddress.sin_port;
@@ -333,7 +342,7 @@ void DoIPServer::setMulticastGroup(const char* address) {
     int loop = 1;
     
     //set Option using the same Port for multiple Sockets
-    int setPort = setsockopt(sockfd_receiver_udp, SOL_SOCKET, SO_REUSEADDR, &loop, sizeof(loop));
+    int setPort = setsockopt(server_socket_udp, SOL_SOCKET, SO_REUSEADDR, &loop, sizeof(loop));
     
     if(setPort < 0)
     {
@@ -347,7 +356,7 @@ void DoIPServer::setMulticastGroup(const char* address) {
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
     
     //set Option to join Multicast Group
-    int setGroup = setsockopt(sockfd_receiver_udp, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq));
+    int setGroup = setsockopt(server_socket_udp, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq));
     
     if(setGroup < 0)
     {
@@ -361,14 +370,14 @@ void DoIPServer::setMulticastGroup(const char* address) {
  */
 void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn) {
     diag_callback = dc;
-    diag_notification = dmn;
+    notify_application = dmn;
 }
 
-void DoIPServer::sendDiagnosticAck(PayloadType type, unsigned char ackCode) {
+void DoIPServer::sendDiagnosticAck(bool ackType, unsigned char ackCode) {
     unsigned char data_TA [2] = { 0x0E, 0x00 };
     unsigned char data_SA [2] = { 0xE0, 0x00 };
     
-    unsigned char* message = createDiagnosticACK(type, data_SA, data_TA, ackCode);
+    unsigned char* message = createDiagnosticACK(ackType, data_SA, data_TA, ackCode);
     sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
 }
 
@@ -399,7 +408,7 @@ int DoIPServer::sendVehicleAnnouncement() {
         std::cout <<"Broadcast Address set succesfully"<<std::endl;
     }
     
-    int socketError = setsockopt(sockfd_receiver_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
+    int socketError = setsockopt(server_socket_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
          
     if(socketError == 0)
     {
@@ -413,7 +422,7 @@ int DoIPServer::sendVehicleAnnouncement() {
     for(int i = 0; i < A_DoIP_Announce_Num; i++)
     {
         
-        sendedmessage = sendto(sockfd_receiver_udp, message, _GenericHeaderLength + _VIResponseLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+        sendedmessage = sendto(server_socket_udp, message, _GenericHeaderLength + _VIResponseLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
         
         if(sendedmessage > 0)
         {
