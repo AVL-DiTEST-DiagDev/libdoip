@@ -5,29 +5,25 @@
  */
 void DoIPClient::startTcpConnection() {
 
-    const char* ipAddr="127.0.0.1";
-    bool connectedFlag=false;
-    _sockFd= socket(AF_INET,SOCK_STREAM,0);   
+    const char* ipAddr = "127.0.0.1";
+    bool connectedFlag = false;
+    _sockFd = socket(AF_INET,SOCK_STREAM,0);   
     
     if(_sockFd>=0)
     {
-
         std::cout << "Client TCP-Socket created successfully" << std::endl;
 
-    
-        _serverAddr.sin_family=AF_INET;
-        _serverAddr.sin_port=htons(_serverPortNr);
+        _serverAddr.sin_family = AF_INET;
+        _serverAddr.sin_port = htons(_serverPortNr);
         inet_aton(ipAddr,&(_serverAddr.sin_addr)); 
         
         while(!connectedFlag)
         {
-            _connected= connect(_sockFd,(struct sockaddr *) &_serverAddr,sizeof(_serverAddr));
+            _connected = connect(_sockFd,(struct sockaddr *) &_serverAddr,sizeof(_serverAddr));
             if(_connected!=-1)
             {
-                connectedFlag=true;
-
+                connectedFlag = true;
                 std::cout << "Connection to server established" << std::endl;
-
             }
         }  
     }   
@@ -35,24 +31,22 @@ void DoIPClient::startTcpConnection() {
 
 void DoIPClient::startUdpConnection(){
     
-    _sockFd_udp= socket(AF_INET,SOCK_DGRAM, 0); 
+    _sockFd_udp = socket(AF_INET,SOCK_DGRAM, 0); 
     
-    if(_sockFd_udp>= 0)
+    if(_sockFd_udp >= 0)
     {
         std::cout << "Client-UDP-Socket created successfully" << std::endl;
         
-        _serverAddr.sin_family=AF_INET;
-        _serverAddr.sin_port=htons(_serverPortNr);
-        _serverAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        _serverAddr.sin_family = AF_INET;
+        _serverAddr.sin_port = htons(_serverPortNr);
+        _serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         
-        _clientAddr.sin_family=AF_INET;
-        _clientAddr.sin_port=htons(_serverPortNr);
-        _clientAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        _clientAddr.sin_family = AF_INET;
+        _clientAddr.sin_port = htons(_serverPortNr);
+        _clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         
         //binds the socket to any IP Address and the Port Number 13400
         bind(_sockFd_udp, (struct sockaddr *)&_clientAddr, sizeof(_clientAddr));
-        
-        
     }
 }
 
@@ -67,13 +61,10 @@ void DoIPClient::closeUdpConnection(){
     close(_sockFd_udp);
 }
 
-
-
 void DoIPClient::reconnectServer(){
     closeTcpConnection();
     startTcpConnection();
 }
-
 
 /*
  *Build the Routing-Activation-Request for server

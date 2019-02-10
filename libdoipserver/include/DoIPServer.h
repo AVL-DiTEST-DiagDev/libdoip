@@ -17,9 +17,7 @@
 #include "DiagnosticMessageHandler.h"
 
 const int _ServerPort = 13400;
-
 const unsigned int _MaxDataSize = 4294967294;
-
 
 class DoIPServer {
 
