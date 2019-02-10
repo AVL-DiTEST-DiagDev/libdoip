@@ -28,10 +28,6 @@ void DoIPServer::setupUdpSocket(){
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
-    clientAddress.sin_family = AF_INET;
-    clientAddress.sin_addr.s_addr=htonl(INADDR_ANY);
-    clientAddress.sin_port=htons(_ServerPort);
-    
     if(sockfd_receiver_udp < 0)
         std::cout << "Error setting up a udp socket" << std::endl;
     
@@ -158,8 +154,8 @@ int DoIPServer::receiveMessage() {
  */
 int DoIPServer::receiveUdpMessage(){
     
-    unsigned int length = sizeof(clientAddress);   
-    int readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &clientAddress, &length);
+    unsigned int length = sizeof(serverAddress);   
+    int readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
     if(readedBytes > 0) {
         dataLength = readedBytes;
@@ -219,6 +215,10 @@ int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
 
 
 int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
+    
+    //if the server receives a message from a client, than the response should be send back to the client address and port
+    clientAddress.sin_port = serverAddress.sin_port;
+    clientAddress.sin_addr.s_addr = serverAddress.sin_addr.s_addr;
     
     int result = sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
     
@@ -388,7 +388,11 @@ int DoIPServer::sendVehicleAnnouncement() {
     
     const char* address = "255.255.255.255";
     
+    //setting the destination port for the Announcement to 13401
+    clientAddress.sin_port=htons(13401);
+    
     int setAddressError = inet_aton(address,&(clientAddress.sin_addr));
+    
     
     if(setAddressError != 0)
     {

@@ -180,10 +180,10 @@ void DoIPClient::receiveMessage() {
 
 void DoIPClient::receiveUdpMessage() {
     
-    unsigned int length = sizeof(_serverAddr);
+    unsigned int length = sizeof(_clientAddr);
     
     int readedBytes;
-    readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_serverAddr, &length);
+    readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_clientAddr, &length);
     
     if(PayloadType::VEHICLEIDENTRESPONSE == parseGenericHeader(_receivedData, readedBytes).type)
     {
