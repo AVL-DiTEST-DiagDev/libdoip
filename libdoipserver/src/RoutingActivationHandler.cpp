@@ -5,7 +5,7 @@
  * @param data  contains the request
  * @return      routing activation response code 
  */
-unsigned char parseRoutingActivation(unsigned char data[64]) {
+unsigned char parseRoutingActivation(unsigned char *data) {
     
     //Check if source address is known
     uint32_t address = 0;
@@ -13,7 +13,7 @@ unsigned char parseRoutingActivation(unsigned char data[64]) {
     address |= (uint32_t)data[9];
     if(!checkSourceAddress(address)) {
         //send routing activation negative response code --> close socket
-        return 0x00;
+        return _UnknownSourceAddressCode;
     }
     
     //Check if routing activation type is supported
@@ -29,16 +29,12 @@ unsigned char parseRoutingActivation(unsigned char data[64]) {
         default: {
             //unknown activation type
             //send routing activation negative response code --> close socket
-            return 0x06;
+            return _UnsupportedRoutingTypeCode;
         }
     }
     
-    //Call Socket handler    
-    //Check if authentication is required   
-    //Check if confirmation is required
-    
     //if not exited before, send routing activation positive response
-    return 0x10;
+    return _SuccessfullyRoutedCode;
 }
 
 /**

@@ -8,111 +8,116 @@
  * @return              Returns a GenericHeaderAction struct, which stores the
  *                      payload type and a byte for further message processing
  */
-GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght) {
+GenericHeaderAction parseGenericHeader(unsigned char* data, int dataLenght) {
     
     GenericHeaderAction action;
     
-    //Check Generic DoIP synchronization pattern
-    if((int)(data[1] ^ (0xFF)) != (int)data[0]) {
-        //Return Error, Protocol Version not correct
-        action.type = PayloadType::NEGATIVEACK;
-        action.value = 0x00;
-        return action;
-    }
-    
-    //Check Payload Type
-    if(data[2] == 0x00 && data[3] == 0x05) {			//Value of RoutingActivationRequest = 0x0005
-        action.type = PayloadType::ROUTINGACTIVATIONREQUEST;
-    }
-    else if(data[2] == 0x00 && data[3] == 0x04){
-        action.type = PayloadType::VEHICLEIDENTRESPONSE;
-    }
-    else if(data[2] == 0x00 && data[3] == 0x01) {		//Value of Vehicle Identification Request = 0x0001
-        action.type = PayloadType::VEHICLEIDENTREQUEST;
-    }
-    else if(data[2] == 0x80 && data[3] == 0x01) {		//Value of Diagnose Message = 0x8001
-        action.type = PayloadType::DIAGNOSTICMESSAGE;
-    } 
-    else if(data[2] == 0x80 && data[3] == 0x02) {                   //Value of Diagnostic Message positive ack =
-        action.type = PayloadType::DIAGNOSTICPOSITIVEACK;
-    } 
-    else if(data[2] == 0x80 && data[3] == 0x03) {                   //Value of Diagnostic Message negative ack =
-        action.type = PayloadType::DIAGNOSTICNEGATIVEACK;
-    } else {
-        //Unknown Payload Type --> Send Generic DoIP Header NACK
-        action.type = PayloadType::NEGATIVEACK;
-        action.value = 0x01;
-        return action;
-    }
-   
-    //Check if the message length exceeds the maximum processable length
-    if(dataLenght > 64) {
-        action.type = PayloadType::NEGATIVEACK;
-        action.value = 0x02;
-        return action;
-    }
+    //Only check header if received data is greater or equals the set header length
+    if(dataLenght >= _GenericHeaderLength) {
         
-    //Check current DoIP protocol handler memory
-    //DoIP-044 - Figure 7
-    
-    //Check Payload Type specific length
-    switch(action.type) {
-        case PayloadType::ROUTINGACTIVATIONREQUEST: {
-            if(dataLenght - _GenericHeaderLength != 7 || data[7] != 0x07) {
-                action.type = PayloadType::NEGATIVEACK;
-                action.value = 0x04;
-                return action;
-            }
-            break;
+        //Check Generic DoIP synchronization pattern
+        if((int)(data[1] ^ (0xFF)) != (int)data[0]) {
+            //Return Error, Protocol Version not correct
+            action.type = PayloadType::NEGATIVEACK;
+            action.value = _IncorrectPatternFormatCode;
+            return action;
         }
 
-        case PayloadType::VEHICLEIDENTREQUEST: { //PayloadTypeLength = 0
-            if(dataLenght - _GenericHeaderLength != 0 || data[7] != 0x00) {
-                action.type = PayloadType::NEGATIVEACK;
-                action.value = 0x04;
-                return action;
-            }
-            break;
+        //Check Payload Type
+        PayloadType messagePayloadType;
+        if(data[2] == 0x00 && data[3] == 0x05) {	//Value of RoutingActivationRequest = 0x0005
+            messagePayloadType = PayloadType::ROUTINGACTIVATIONREQUEST;
         }
-        
-        case PayloadType::VEHICLEIDENTRESPONSE:{
-            if(dataLenght - _GenericHeaderLength != 32) {
-                action.type = PayloadType::NEGATIVEACK;
-                action.value = 0x04;
-                return action;
-            }
-            break;
+        else if(data[2] == 0x00 && data[3] == 0x04){
+            messagePayloadType = PayloadType::VEHICLEIDENTRESPONSE;
         }
-
-        case PayloadType::DIAGNOSTICMESSAGE: {
-            if(dataLenght - _GenericHeaderLength <= 4) {
-                action.type = PayloadType::NEGATIVEACK;
-                action.value = 0x04;
-                return action;
-            }
-            break;	
+        else if(data[2] == 0x00 && data[3] == 0x01) {   //Value of Vehicle Identification Request = 0x0001
+            messagePayloadType = PayloadType::VEHICLEIDENTREQUEST;
         }
-        
-        case PayloadType::DIAGNOSTICPOSITIVEACK: {
-            if(dataLenght - _GenericHeaderLength != 5 || data[7] != 0x05) {
-                action.type = PayloadType::NEGATIVEACK;
-                action.value = 0x04;
-            }
-            break;
-        }
-        
-        case PayloadType::DIAGNOSTICNEGATIVEACK: {
-            if(dataLenght - _GenericHeaderLength != 5 || data[7] != 0x05) {
-                action.type = PayloadType::NEGATIVEACK;
-                action.value = 0x04;
-            }
-            break;
+        else if(data[2] == 0x80 && data[3] == 0x01) {   //Value of Diagnose Message = 0x8001
+            messagePayloadType = PayloadType::DIAGNOSTICMESSAGE;
+        } 
+        else if(data[2] == 0x80 && data[3] == 0x02) {   //Value of Diagnostic Message positive ack =
+            messagePayloadType = PayloadType::DIAGNOSTICPOSITIVEACK;
+        } 
+        else if(data[2] == 0x80 && data[3] == 0x03) {   //Value of Diagnostic Message negative ack =
+            messagePayloadType = PayloadType::DIAGNOSTICNEGATIVEACK;
+        } else {
+            //Unknown Payload Type --> Send Generic DoIP Header NACK
+            action.type = PayloadType::NEGATIVEACK;
+            action.value = _UnknownPayloadTypeCode;
+            return action;
         }
 
-        default: {
-            std::cerr << "not handled payload type occured in parseGenericHeader()" << std::endl;
-            break;	
+        //Check Payload Type specific length
+        switch(messagePayloadType) {
+            case PayloadType::ROUTINGACTIVATIONREQUEST: {
+                if(dataLenght - _GenericHeaderLength != 7 || data[7] != 0x07) {
+                    action.type = PayloadType::NEGATIVEACK;
+                    action.value = _InvalidPayloadLengthCode;
+                    return action;
+                }
+                break;
+            }
+
+            case PayloadType::ALIVECHECKRESPONSE: {
+                if(dataLenght - _GenericHeaderLength != 2) {
+                    action.type = PayloadType::NEGATIVEACK;
+                    action.value = _InvalidPayloadLengthCode;
+                    return action;
+                }
+                break;
+            }
+            
+            case PayloadType::VEHICLEIDENTREQUEST: {
+                if(dataLenght - _GenericHeaderLength != 0 || data[7] != 0x00) {
+                    action.type = PayloadType::NEGATIVEACK;
+                    action.value = _InvalidPayloadLengthCode;
+                    return action;
+                }
+                break;
+            }
+
+            case PayloadType::VEHICLEIDENTRESPONSE:{
+                if(dataLenght - _GenericHeaderLength != 32) {
+                    action.type = PayloadType::NEGATIVEACK;
+                    action.value = _InvalidPayloadLengthCode;
+                    return action;
+                }
+                break;
+            }
+
+            case PayloadType::DIAGNOSTICMESSAGE: {
+                if(dataLenght - _GenericHeaderLength <= 4) {
+                    action.type = PayloadType::NEGATIVEACK;
+                    action.value = _InvalidPayloadLengthCode;
+                    return action;
+                }
+                break;	
+            }
+
+            case PayloadType::DIAGNOSTICPOSITIVEACK: {
+                if(dataLenght - _GenericHeaderLength != 5 || data[7] != 0x05) {
+                    action.type = PayloadType::NEGATIVEACK;
+                    action.value = _InvalidPayloadLengthCode;
+                }
+                break;
+            }
+
+            case PayloadType::DIAGNOSTICNEGATIVEACK: {
+                if(dataLenght - _GenericHeaderLength != 5 || data[7] != 0x05) {
+                    action.type = PayloadType::NEGATIVEACK;
+                    action.value = _InvalidPayloadLengthCode;
+                }
+                break;
+            }
+
+            default: {
+                std::cerr << "not handled payload type occured in parseGenericHeader()" << std::endl;
+                break;	
+            }
         }
+        action.type = messagePayloadType;
     }
     
     return action;
@@ -162,6 +167,12 @@ unsigned char* createGenericHeader(PayloadType type, uint32_t length) {
         case PayloadType::DIAGNOSTICNEGATIVEACK: {
             header[2] = 0x80;
             header[3] = 0x03;
+            break;
+        }
+        
+        case PayloadType::ALIVECHECKRESPONSE: {
+            header[2] = 0x00;
+            header[3] = 0x08;
             break;
         }
 

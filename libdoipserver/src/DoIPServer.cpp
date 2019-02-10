@@ -1,58 +1,67 @@
 #include "DoIPServer.h"
 
 /*
- * Set up a socket till the point where the server waits till a client
- * approaches to make a connection
+ * Set up a tcp socket, so the socket is ready to accept a connection 
  */
-void DoIPServer::setupSocket() {
+void DoIPServer::setupTcpSocket() {
     
-    sockfd_receiver = socket(AF_INET, SOCK_STREAM, 0);
-    
+    server_socket_tcp = socket(AF_INET, SOCK_STREAM, 0);
+
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
     //binds the socket to the address and port number
-    bind(sockfd_receiver, (struct sockaddr *)&serverAddress, sizeof(serverAddress));     
+    bind(server_socket_tcp, (struct sockaddr *)&serverAddress, sizeof(serverAddress));     
+}
+
+/*
+ *  Listen till a client attempts a connection and accepts it
+ */
+void DoIPServer::listenTcpConnection() {
     //waits till client approach to make connection
-    listen(sockfd_receiver, 5);                                                          
-    
-    sockfd_sender = accept(sockfd_receiver, (struct sockaddr*) NULL, NULL);
+    listen(server_socket_tcp, 5);                                                          
+    client_socket_tcp = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);
 }
 
 void DoIPServer::setupUdpSocket(){
     
-    sockfd_receiver_udp = socket(AF_INET, SOCK_DGRAM, 0);
+    server_socket_udp = socket(AF_INET, SOCK_DGRAM, 0);
     
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
     
-    clientAddress.sin_family = AF_INET;
-    clientAddress.sin_addr.s_addr=htonl(INADDR_ANY);
-    clientAddress.sin_port=htons(_ServerPort);
-    
-    if(sockfd_receiver_udp < 0)
+    if(server_socket_udp < 0)
         std::cout << "Error setting up a udp socket" << std::endl;
     
     //binds the socket to any IP Address and the Port Number 13400
-    bind(sockfd_receiver_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
+    bind(server_socket_udp, (struct sockaddr *)&serverAddress, sizeof(serverAddress)); 
     
     //setting the IP Address for Multicast
     setMulticastGroup("224.0.0.2");
-    
+}
+
+/**
+ * Closes the connection by closing the sockets
+ */
+void DoIPServer::aliveCheckTimeout() {
+    std::cout << "Alive Check Timeout. Close Connection" << std::endl;
+    closeSocket();
+    closeUdpSocket();
+    close_connection();
 }
 
 /*
  * Closes the socket for this server
  */
 void DoIPServer::closeSocket() {
-    close(sockfd_receiver);
-    close(sockfd_sender);
+    close(server_socket_tcp);
+    close(client_socket_tcp);
 }
 
 void DoIPServer::closeUdpSocket() {
-    close(sockfd_receiver_udp);
+    close(server_socket_udp);
 }
 
 
@@ -64,7 +73,7 @@ void DoIPServer::triggerDisconnection() {
     
     while(socketsClosed == false)
     {
-        int tcpSenderClosed = close(sockfd_sender);
+        int tcpSenderClosed = close(client_socket_tcp);
         
         if(tcpSenderClosed == 0)
         {
@@ -72,7 +81,7 @@ void DoIPServer::triggerDisconnection() {
             
             std::cout << "Connecting to the Client" << std::endl;
             
-            sockfd_sender = accept(sockfd_receiver, (struct sockaddr*) NULL, NULL);      
+            client_socket_tcp = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);      
         }
         else
         {
@@ -89,9 +98,14 @@ void DoIPServer::triggerDisconnection() {
  */
 int DoIPServer::receiveMessage() {
 
-    int readedBytes = recv(sockfd_sender, data, _MaxDataSize, 0);
+    int readedBytes = recv(client_socket_tcp, data, _MaxDataSize, 0);
 
-    if(readedBytes > 0) {
+    if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
+        //if alive check timouts should be possible, reset timer when message received
+        if(aliveCheckTimer.active) {
+            aliveCheckTimer.resetTimer();
+        }
+
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
        
@@ -101,7 +115,8 @@ int DoIPServer::receiveMessage() {
                 //send NACK
                 sendedBytes = sendNegativeAck(action.value);
                 
-                if(action.value == 0x00 || action.value == 0x04) {
+                if(action.value == _IncorrectPatternFormatCode || 
+                        action.value == _InvalidPayloadLengthCode) {
                     closeSocket();
                     return -1;
                 }
@@ -117,7 +132,8 @@ int DoIPServer::receiveMessage() {
                 unsigned char* message = createRoutingActivationResponse(clientAddress, result);
                 sendedBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
                 
-                if(result == 0x00 || result == 0x06) {
+                if(result == _UnknownSourceAddressCode || 
+                        result == _UnsupportedRoutingTypeCode) {
                     closeSocket();
                     return -1;
                 } else {
@@ -125,15 +141,25 @@ int DoIPServer::receiveMessage() {
                     routedClientAddress = new unsigned char[2];
                     routedClientAddress[0] = data[8];
                     routedClientAddress[1] = data[9];
+                    
+                    //start alive check timer
+                    if(!aliveCheckTimer.active) {
+                        aliveCheckTimer.cb = std::bind(&DoIPServer::aliveCheckTimeout,this);
+                        aliveCheckTimer.startTimer();
+                    }
                 }
 
                 return sendedBytes;
+            }
+            
+            case PayloadType::ALIVECHECKRESPONSE: {
+                return 0;
             }
 				
             case PayloadType::DIAGNOSTICMESSAGE: {
                               
                 unsigned char target_address [2] = {data[10], data[11]};           
-                bool ack = diag_notification(target_address);
+                bool ack = notify_application(target_address);
                 
                 if(ack)
                     parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
@@ -158,10 +184,11 @@ int DoIPServer::receiveMessage() {
  */
 int DoIPServer::receiveUdpMessage(){
     
-    unsigned int length = sizeof(clientAddress);   
-    int readedBytes = recvfrom(sockfd_receiver_udp, data, _MaxDataSize, 0, (struct sockaddr *) &clientAddress, &length);
+
+    unsigned int length = sizeof(serverAddress);   
+    int readedBytes = recvfrom(server_socket_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
-    if(readedBytes > 0) {
+    if(readedBytes > 0 && !aliveCheckTimer.timeout) {
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
 
@@ -179,7 +206,8 @@ int DoIPServer::receiveUdpMessage(){
                 message[8] = action.value;
                 sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _NACKLength);
 
-                if(action.value == 0x00 || action.value == 0x04) {
+                if(action.value == _IncorrectPatternFormatCode || 
+                        action.value == _InvalidPayloadLengthCode) {
                     closeSocket();
                     return -1;
                 } else {
@@ -213,16 +241,34 @@ int DoIPServer::receiveUdpMessage(){
  *                          or -1 if error occurred
  */
 int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
-    int result = write(sockfd_sender, message, messageLength);
+    int result = write(client_socket_tcp, message, messageLength);
     return result;
 }
 
 
 int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
+
     
-    int result = sendto(sockfd_receiver_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+    //if the server receives a message from a client, than the response should be send back to the client address and port
+    clientAddress.sin_port = serverAddress.sin_port;
+    clientAddress.sin_addr.s_addr = serverAddress.sin_addr.s_addr;
+    
+    int result = sendto(server_socket_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
     
     return result;
+}
+
+/**
+ * Sets the time in seconds after which a alive check timeout occurs.
+ * Alive check timeouts can be deactivated when setting the seconds to 0
+ * @param seconds   time after which alive check timeout occurs
+ */
+void DoIPServer::setGeneralInactivityTime(uint16_t seconds) {
+    if(seconds > 0) {
+        aliveCheckTimer.setTimer(seconds);
+    } else {
+        aliveCheckTimer.disabled = true;
+    }
 }
 
 void DoIPServer::setEIDdefault(){
@@ -293,8 +339,6 @@ void DoIPServer::setA_DoIP_Announce_Interval(int Interval){
     A_DoIP_Announce_Interval = Interval;
 }
 
-
-
 /*
  * Receive diagnostic message payload from the server application, which will be sended back to the client
  * @param value     received payload
@@ -333,7 +377,7 @@ void DoIPServer::setMulticastGroup(const char* address) {
     int loop = 1;
     
     //set Option using the same Port for multiple Sockets
-    int setPort = setsockopt(sockfd_receiver_udp, SOL_SOCKET, SO_REUSEADDR, &loop, sizeof(loop));
+    int setPort = setsockopt(server_socket_udp, SOL_SOCKET, SO_REUSEADDR, &loop, sizeof(loop));
     
     if(setPort < 0)
     {
@@ -347,7 +391,7 @@ void DoIPServer::setMulticastGroup(const char* address) {
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
     
     //set Option to join Multicast Group
-    int setGroup = setsockopt(sockfd_receiver_udp, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq));
+    int setGroup = setsockopt(server_socket_udp, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq));
     
     if(setGroup < 0)
     {
@@ -357,18 +401,21 @@ void DoIPServer::setMulticastGroup(const char* address) {
 
 /*
  * Set the callback function for this doip server instance
- * @cb  callback function
+ * @dc      Callback which sends the data of a diagnostic message to the application
+ * @dmn     Callback which notifies the application of receiving a diagnostic message
+ * @ccb     Callback for application function when the library closes the connection
  */
-void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn) {
+void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn, CloseConnectionCallback ccb) {
     diag_callback = dc;
-    diag_notification = dmn;
+    notify_application = dmn;
+    close_connection = ccb;
 }
 
-void DoIPServer::sendDiagnosticAck(PayloadType type, unsigned char ackCode) {
+void DoIPServer::sendDiagnosticAck(bool ackType, unsigned char ackCode) {
     unsigned char data_TA [2] = { 0x0E, 0x00 };
     unsigned char data_SA [2] = { 0xE0, 0x00 };
     
-    unsigned char* message = createDiagnosticACK(type, data_SA, data_TA, ackCode);
+    unsigned char* message = createDiagnosticACK(ackType, data_SA, data_TA, ackCode);
     sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
 }
 
@@ -388,14 +435,18 @@ int DoIPServer::sendVehicleAnnouncement() {
     
     const char* address = "255.255.255.255";
     
+    //setting the destination port for the Announcement to 13401
+    clientAddress.sin_port=htons(13401);
+    
     int setAddressError = inet_aton(address,&(clientAddress.sin_addr));
+    
     
     if(setAddressError != 0)
     {
         std::cout <<"Broadcast Address set succesfully"<<std::endl;
     }
     
-    int socketError = setsockopt(sockfd_receiver_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
+    int socketError = setsockopt(server_socket_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );
          
     if(socketError == 0)
     {
@@ -409,7 +460,7 @@ int DoIPServer::sendVehicleAnnouncement() {
     for(int i = 0; i < A_DoIP_Announce_Num; i++)
     {
         
-        sendedmessage = sendto(sockfd_receiver_udp, message, _GenericHeaderLength + _VIResponseLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
+        sendedmessage = sendto(server_socket_udp, message, _GenericHeaderLength + _VIResponseLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
         
         if(sendedmessage > 0)
         {
