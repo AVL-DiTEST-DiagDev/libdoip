@@ -5,25 +5,25 @@
  */
 void DoIPClient::startTcpConnection() {
 
-    const char* ipAddr="127.0.0.1";
-    bool connectedFlag=false;
-    _sockFd= socket(AF_INET,SOCK_STREAM,0);   
+    const char* ipAddr = "127.0.0.1";
+    bool connectedFlag = false;
+    _sockFd = socket(AF_INET,SOCK_STREAM,0);   
     
     if(_sockFd>=0)
     {
-        std::cout << "Client-Socket wurde angelegt." << std::endl;
-    
-        _serverAddr.sin_family=AF_INET;
-        _serverAddr.sin_port=htons(_serverPortNr);
+        std::cout << "Client TCP-Socket created successfully" << std::endl;
+
+        _serverAddr.sin_family = AF_INET;
+        _serverAddr.sin_port = htons(_serverPortNr);
         inet_aton(ipAddr,&(_serverAddr.sin_addr)); 
         
         while(!connectedFlag)
         {
-            _connected= connect(_sockFd,(struct sockaddr *) &_serverAddr,sizeof(_serverAddr));
+            _connected = connect(_sockFd,(struct sockaddr *) &_serverAddr,sizeof(_serverAddr));
             if(_connected!=-1)
             {
-                connectedFlag=true;
-                std::cout << "Die Verbindung zum Server wurde hergestellt" << std::endl;
+                connectedFlag = true;
+                std::cout << "Connection to server established" << std::endl;
             }
         }  
     }   
@@ -31,24 +31,22 @@ void DoIPClient::startTcpConnection() {
 
 void DoIPClient::startUdpConnection(){
     
-    _sockFd_udp= socket(AF_INET,SOCK_DGRAM, 0); 
+    _sockFd_udp = socket(AF_INET,SOCK_DGRAM, 0); 
     
-    if(_sockFd_udp>= 0)
+    if(_sockFd_udp >= 0)
     {
         std::cout << "Client-UDP-Socket created successfully" << std::endl;
         
-        _serverAddr.sin_family=AF_INET;
-        _serverAddr.sin_port=htons(_serverPortNr);
-        _serverAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        _serverAddr.sin_family = AF_INET;
+        _serverAddr.sin_port = htons(_serverPortNr);
+        _serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         
-        _clientAddr.sin_family=AF_INET;
-        _clientAddr.sin_port=htons(_serverPortNr);
-        _clientAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        _clientAddr.sin_family = AF_INET;
+        _clientAddr.sin_port = htons(_serverPortNr);
+        _clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         
         //binds the socket to any IP Address and the Port Number 13400
         bind(_sockFd_udp, (struct sockaddr *)&_clientAddr, sizeof(_clientAddr));
-        
-        
     }
 }
 
@@ -61,6 +59,11 @@ void DoIPClient::closeTcpConnection(){
 
 void DoIPClient::closeUdpConnection(){
     close(_sockFd_udp);
+}
+
+void DoIPClient::reconnectServer(){
+    closeTcpConnection();
+    startTcpConnection();
 }
 
 /*
@@ -135,7 +138,20 @@ void DoIPClient::sendAliveCheckResponse() {
  */
 void DoIPClient::receiveMessage() {
     
-    int readedBytes = read(_sockFd,_receivedData,_maxDataSize);
+    int readedBytes = recv(_sockFd,_receivedData,_maxDataSize, 0);
+    
+    if(!readedBytes) //if server is disconnected from client; client gets empty messages
+    {
+        emptyMessageCounter++;
+        
+        if(emptyMessageCounter == 5)
+        {
+            std::cout << "Received to many empty messages. Reconnect TCP connection" << std::endl;
+            emptyMessageCounter = 0;
+            reconnectServer();
+        }
+        return;
+    }
 	
     printf("Client received: ");
     for(int i = 0; i < readedBytes; i++)
@@ -170,19 +186,12 @@ void DoIPClient::receiveMessage() {
 
 void DoIPClient::receiveUdpMessage() {
     
-    unsigned int length = sizeof(_serverAddr);
+    unsigned int length = sizeof(_clientAddr);
     
     int readedBytes;
-    readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_serverAddr, &length);
+    readedBytes = recvfrom(_sockFd_udp, _receivedData, _maxDataSize, 0, (struct sockaddr*)&_clientAddr, &length);
     
-  
-    
-    for(int i=0;i<readedBytes;i++)
-    {
-       std::cout << (int)_receivedData[i] << std::endl;
-    } 
-    
-    if(_receivedData[2] == 0x00 && _receivedData[3] == 0x04)
+    if(PayloadType::VEHICLEIDENTRESPONSE == parseGenericHeader(_receivedData, readedBytes).type)
     {
         parseVIResponseInformation(_receivedData);
     }
@@ -219,6 +228,10 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
     if(setAddressError != 0)
     {
         std::cout <<"Address set succesfully"<<std::endl;
+    }
+    else
+    {
+        std::cout << "Could not set Address. Try again" << std::endl;
     }
     
     int socketError = setsockopt(_sockFd_udp, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast) );

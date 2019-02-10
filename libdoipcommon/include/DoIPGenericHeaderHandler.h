@@ -6,6 +6,10 @@
 const int _GenericHeaderLength = 8;
 const int _NACKLength = 1;
 
+const unsigned char _IncorrectPatternFormatCode = 0x00;
+const unsigned char _UnknownPayloadTypeCode = 0x01;
+const unsigned char _InvalidPayloadLengthCode = 0x04;
+
 enum PayloadType {
     NEGATIVEACK,
     ROUTINGACTIVATIONREQUEST,
@@ -23,7 +27,7 @@ struct GenericHeaderAction {
     unsigned char value;
 };
 
-GenericHeaderAction parseGenericHeader(unsigned char data[64], int dataLenght);
+GenericHeaderAction parseGenericHeader(unsigned char* data, int dataLenght);
 unsigned char* createGenericHeader(PayloadType type, uint32_t length);
 
 
