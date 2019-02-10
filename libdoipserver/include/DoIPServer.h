@@ -17,7 +17,7 @@
 #include "DiagnosticMessageHandler.h"
 
 const int _ServerPort = 13400;
-const int _MaxDataSize = 64;   
+const unsigned int _MaxDataSize = 4294967294;
 
 class DoIPServer {
 
@@ -25,14 +25,15 @@ public:
     DoIPServer() = default;
     DoIPServer(DiagnosticCallback diag_callback): diag_callback{diag_callback} { };
     void setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn);              
-    void setupSocket();
+    void setupTcpSocket();
+    void listenTcpConnection();
     void setupUdpSocket();
     int receiveMessage();
     int receiveUdpMessage();
     void receiveDiagnosticPayload(unsigned char* address, unsigned char* value, int length);
     void closeSocket();
     void closeUdpSocket();
-    void sendDiagnosticAck(PayloadType type, unsigned char ackCode);
+    void sendDiagnosticAck(bool ackType, unsigned char ackCode);
     int sendNegativeAck(unsigned char ackCode);
 
     const unsigned char* getData();
@@ -54,10 +55,10 @@ public:
 
 private:
     DiagnosticCallback diag_callback;
-    DiagnosticMessageNotification diag_notification;
+    DiagnosticMessageNotification notify_application;
     unsigned char data[_MaxDataSize];
     int dataLength;
-    int sockfd_receiver, sockfd_receiver_udp, sockfd_sender;
+    int server_socket_tcp, server_socket_udp, client_socket_tcp;
     struct sockaddr_in serverAddress, clientAddress;
     unsigned char* routedClientAddress;
     
@@ -75,6 +76,7 @@ private:
     int sendMessage(unsigned char* message, int messageLenght);
     int sendUdpMessage(unsigned char* message, int messageLength);
     void setMulticastGroup(const char* address);
+
 
 };
 
