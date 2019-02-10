@@ -7,7 +7,6 @@ void DoIPServer::setupTcpSocket() {
     
     server_socket_tcp = socket(AF_INET, SOCK_STREAM, 0);
 
-
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(_ServerPort);
@@ -20,7 +19,7 @@ void DoIPServer::setupTcpSocket() {
  *  Listen till a client attempts a connection and accepts it
  */
 void DoIPServer::listenTcpConnection() {
-     //waits till client approach to make connection
+    //waits till client approach to make connection
     listen(server_socket_tcp, 5);                                                          
     client_socket_tcp = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);
 }
@@ -41,7 +40,16 @@ void DoIPServer::setupUdpSocket(){
     
     //setting the IP Address for Multicast
     setMulticastGroup("224.0.0.2");
-    
+}
+
+/**
+ * Closes the connection by closing the sockets
+ */
+void DoIPServer::aliveCheckTimeout() {
+    std::cout << "Alive Check Timeout. Close Connection" << std::endl;
+    closeSocket();
+    closeUdpSocket();
+    close_connection();
 }
 
 /*
@@ -91,8 +99,13 @@ void DoIPServer::triggerDisconnection() {
 int DoIPServer::receiveMessage() {
 
     int readedBytes = recv(client_socket_tcp, data, _MaxDataSize, 0);
-    
-    if(readedBytes > 0) {
+
+    if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
+        //if alive check timouts should be possible, reset timer when message received
+        if(aliveCheckTimer.active) {
+            aliveCheckTimer.resetTimer();
+        }
+
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
        
@@ -128,9 +141,19 @@ int DoIPServer::receiveMessage() {
                     routedClientAddress = new unsigned char[2];
                     routedClientAddress[0] = data[8];
                     routedClientAddress[1] = data[9];
+                    
+                    //start alive check timer
+                    if(!aliveCheckTimer.active) {
+                        aliveCheckTimer.cb = std::bind(&DoIPServer::aliveCheckTimeout,this);
+                        aliveCheckTimer.startTimer();
+                    }
                 }
 
                 return sendedBytes;
+            }
+            
+            case PayloadType::ALIVECHECKRESPONSE: {
+                return 0;
             }
 				
             case PayloadType::DIAGNOSTICMESSAGE: {
@@ -165,7 +188,7 @@ int DoIPServer::receiveUdpMessage(){
     unsigned int length = sizeof(serverAddress);   
     int readedBytes = recvfrom(server_socket_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
-    if(readedBytes > 0) {
+    if(readedBytes > 0 && !aliveCheckTimer.timeout) {
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
 
@@ -183,7 +206,8 @@ int DoIPServer::receiveUdpMessage(){
                 message[8] = action.value;
                 sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _NACKLength);
 
-                if(action.value == 0x00 || action.value == 0x04) {
+                if(action.value == _IncorrectPatternFormatCode || 
+                        action.value == _InvalidPayloadLengthCode) {
                     closeSocket();
                     return -1;
                 } else {
@@ -232,6 +256,19 @@ int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //s
     int result = sendto(server_socket_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
     
     return result;
+}
+
+/**
+ * Sets the time in seconds after which a alive check timeout occurs.
+ * Alive check timeouts can be deactivated when setting the seconds to 0
+ * @param seconds   time after which alive check timeout occurs
+ */
+void DoIPServer::setGeneralInactivityTime(uint16_t seconds) {
+    if(seconds > 0) {
+        aliveCheckTimer.setTimer(seconds);
+    } else {
+        aliveCheckTimer.disabled = true;
+    }
 }
 
 void DoIPServer::setEIDdefault(){
@@ -302,8 +339,6 @@ void DoIPServer::setA_DoIP_Announce_Interval(int Interval){
     A_DoIP_Announce_Interval = Interval;
 }
 
-
-
 /*
  * Receive diagnostic message payload from the server application, which will be sended back to the client
  * @param value     received payload
@@ -366,11 +401,14 @@ void DoIPServer::setMulticastGroup(const char* address) {
 
 /*
  * Set the callback function for this doip server instance
- * @cb  callback function
+ * @dc      Callback which sends the data of a diagnostic message to the application
+ * @dmn     Callback which notifies the application of receiving a diagnostic message
+ * @ccb     Callback for application function when the library closes the connection
  */
-void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn) {
+void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn, CloseConnectionCallback ccb) {
     diag_callback = dc;
     notify_application = dmn;
+    close_connection = ccb;
 }
 
 void DoIPServer::sendDiagnosticAck(bool ackType, unsigned char ackCode) {

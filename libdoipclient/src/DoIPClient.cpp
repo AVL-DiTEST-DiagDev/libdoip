@@ -5,29 +5,25 @@
  */
 void DoIPClient::startTcpConnection() {
 
-    const char* ipAddr="127.0.0.1";
-    bool connectedFlag=false;
-    _sockFd= socket(AF_INET,SOCK_STREAM,0);   
+    const char* ipAddr = "127.0.0.1";
+    bool connectedFlag = false;
+    _sockFd = socket(AF_INET,SOCK_STREAM,0);   
     
     if(_sockFd>=0)
     {
-
         std::cout << "Client TCP-Socket created successfully" << std::endl;
 
-    
-        _serverAddr.sin_family=AF_INET;
-        _serverAddr.sin_port=htons(_serverPortNr);
+        _serverAddr.sin_family = AF_INET;
+        _serverAddr.sin_port = htons(_serverPortNr);
         inet_aton(ipAddr,&(_serverAddr.sin_addr)); 
         
         while(!connectedFlag)
         {
-            _connected= connect(_sockFd,(struct sockaddr *) &_serverAddr,sizeof(_serverAddr));
+            _connected = connect(_sockFd,(struct sockaddr *) &_serverAddr,sizeof(_serverAddr));
             if(_connected!=-1)
             {
-                connectedFlag=true;
-
+                connectedFlag = true;
                 std::cout << "Connection to server established" << std::endl;
-
             }
         }  
     }   
@@ -35,24 +31,22 @@ void DoIPClient::startTcpConnection() {
 
 void DoIPClient::startUdpConnection(){
     
-    _sockFd_udp= socket(AF_INET,SOCK_DGRAM, 0); 
+    _sockFd_udp = socket(AF_INET,SOCK_DGRAM, 0); 
     
-    if(_sockFd_udp>= 0)
+    if(_sockFd_udp >= 0)
     {
         std::cout << "Client-UDP-Socket created successfully" << std::endl;
         
-        _serverAddr.sin_family=AF_INET;
-        _serverAddr.sin_port=htons(_serverPortNr);
-        _serverAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        _serverAddr.sin_family = AF_INET;
+        _serverAddr.sin_port = htons(_serverPortNr);
+        _serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         
-        _clientAddr.sin_family=AF_INET;
-        _clientAddr.sin_port=htons(_serverPortNr);
-        _clientAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        _clientAddr.sin_family = AF_INET;
+        _clientAddr.sin_port = htons(_serverPortNr);
+        _clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         
         //binds the socket to any IP Address and the Port Number 13400
         bind(_sockFd_udp, (struct sockaddr *)&_clientAddr, sizeof(_clientAddr));
-        
-        
     }
 }
 
@@ -67,13 +61,10 @@ void DoIPClient::closeUdpConnection(){
     close(_sockFd_udp);
 }
 
-
-
 void DoIPClient::reconnectServer(){
     closeTcpConnection();
     startTcpConnection();
 }
-
 
 /*
  *Build the Routing-Activation-Request for server
@@ -129,6 +120,17 @@ void DoIPClient::sendDiagnosticMessage(unsigned char* targetAddress, unsigned ch
     unsigned char* message = createDiagnosticMessage(sourceAddress, targetAddress, userData, userDataLength);
 
     write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);
+}
+
+/**
+ * Sends a alive check response containing the clients source address to the server
+ */
+void DoIPClient::sendAliveCheckResponse() {
+    int responseLength = 2;
+    unsigned char* message = createGenericHeader(PayloadType::ALIVECHECKRESPONSE, responseLength);
+    message[8] = sourceAddress[0];
+    message[9] = sourceAddress[1];
+    write(_sockFd, message, _GenericHeaderLength + responseLength);
 }
 
 /*
@@ -247,6 +249,15 @@ void DoIPClient::sendVehicleIdentificationRequest(const char* address){
     {
         std::cout << "Sending Vehicle Identification Request" << std::endl;
     }
+}
+
+/**
+ * Sets the source address for this client
+ * @param address   source address for the client
+ */
+void DoIPClient::setSourceAddress(unsigned char* address) {
+    sourceAddress[0] = address[0];
+    sourceAddress[1] = address[1];
 }
 
 /*

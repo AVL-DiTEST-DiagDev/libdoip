@@ -27,6 +27,8 @@ public:
     void receiveUdpMessage();
     void receiveMessage();
     void sendDiagnosticMessage(unsigned char* targetAddress, unsigned char* userData, int userDataLength);
+    void sendAliveCheckResponse();
+    void setSourceAddress(unsigned char* address);
     void displayVIResponseInformation();
     void closeTcpConnection();
     void closeUdpConnection();
@@ -40,6 +42,7 @@ private:
     int _sockFd, _sockFd_udp, _connected;
     int broadcast = 1;
     struct sockaddr_in _serverAddr, _clientAddr; 
+    unsigned char sourceAddress [2];
     
     unsigned char VINResult [17];
     unsigned char LogicalAddressResult [2];

@@ -60,6 +60,15 @@ GenericHeaderAction parseGenericHeader(unsigned char* data, int dataLenght) {
                 break;
             }
 
+            case PayloadType::ALIVECHECKRESPONSE: {
+                if(dataLenght - _GenericHeaderLength != 2) {
+                    action.type = PayloadType::NEGATIVEACK;
+                    action.value = _InvalidPayloadLengthCode;
+                    return action;
+                }
+                break;
+            }
+            
             case PayloadType::VEHICLEIDENTREQUEST: {
                 if(dataLenght - _GenericHeaderLength != 0 || data[7] != 0x00) {
                     action.type = PayloadType::NEGATIVEACK;
@@ -158,6 +167,12 @@ unsigned char* createGenericHeader(PayloadType type, uint32_t length) {
         case PayloadType::DIAGNOSTICNEGATIVEACK: {
             header[2] = 0x80;
             header[3] = 0x03;
+            break;
+        }
+        
+        case PayloadType::ALIVECHECKRESPONSE: {
+            header[2] = 0x00;
+            header[3] = 0x08;
             break;
         }
 
