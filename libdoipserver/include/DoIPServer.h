@@ -88,6 +88,7 @@ private:
     int sendMessage(unsigned char* message, int messageLenght);
     int sendUdpMessage(unsigned char* message, int messageLength);
     void setMulticastGroup(const char* address);
+
     void aliveCheckTimeout();
 
 };
