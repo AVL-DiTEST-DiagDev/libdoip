@@ -92,7 +92,7 @@ void DoIPServer::triggerDisconnection() {
 }
 
 /*
- * Receives a message from the client and determine how to process the message
+ * Receives a message from the client and calls reactToReceivedTcpMessage method
  * @return      amount of bytes which were send back to client
  *              or -1 if error occurred     
  */
@@ -105,6 +105,11 @@ int DoIPServer::receiveMessage() {
     return sendedBytes;
 }
 
+/*
+ * Receives a message from the client and determine how to process the message
+ * @return      amount of bytes which were send back to client
+ *              or -1 if error occurred     
+ */
 int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
     
     if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
@@ -185,7 +190,7 @@ int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
 
 
 /*
- * Receives a udp message and determine how to process the message
+ * Receives a udp message and calls reactToReceivedUdpMessage method
  * @return      amount of bytes which were send back to client
  *              or -1 if error occurred     
  */
@@ -202,7 +207,11 @@ int DoIPServer::receiveUdpMessage(){
 }
 
 
-
+/*
+ * Receives a udp message and determine how to process the message
+ * @return      amount of bytes which were send back to client
+ *              or -1 if error occurred     
+ */
 int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
     
     if(readedBytes > 0 && !aliveCheckTimer.timeout) {
