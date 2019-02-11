@@ -90,6 +90,10 @@ private:
     void setMulticastGroup(const char* address);
 
     void aliveCheckTimeout();
+    
+    int reactToReceivedTcpMessage(int readedBytes);
+    
+    int reactToReceivedUdpMessage(int readedBytes);
 
 };
 

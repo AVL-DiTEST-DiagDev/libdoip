@@ -100,6 +100,13 @@ int DoIPServer::receiveMessage() {
 
     int readedBytes = recv(client_socket_tcp, data, _MaxDataSize, 0);
 
+    int sendedBytes = reactToReceivedTcpMessage(readedBytes);
+    
+    return sendedBytes;
+}
+
+int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
+    
     if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
         //if alive check timouts should be possible, reset timer when message received
         if(aliveCheckTimer.active) {
@@ -173,9 +180,9 @@ int DoIPServer::receiveMessage() {
             }
         }  
     }
-    
     return -1;
 }
+
 
 /*
  * Receives a udp message and determine how to process the message
@@ -188,6 +195,16 @@ int DoIPServer::receiveUdpMessage(){
     unsigned int length = sizeof(serverAddress);   
     int readedBytes = recvfrom(server_socket_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
+    int sendedBytes = reactToReceivedUdpMessage(readedBytes);
+    
+    return sendedBytes;
+    
+}
+
+
+
+int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
+    
     if(readedBytes > 0 && !aliveCheckTimer.timeout) {
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
@@ -231,7 +248,10 @@ int DoIPServer::receiveUdpMessage(){
     }
     
     return -1;
+
+    
 }
+
 
 /**
  * Sends a message back to the connected client
