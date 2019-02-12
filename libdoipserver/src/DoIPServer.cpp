@@ -92,7 +92,7 @@ void DoIPServer::triggerDisconnection() {
 }
 
 /*
- * Receives a message from the client and determine how to process the message
+ * Receives a message from the client and calls reactToReceivedTcpMessage method
  * @return      amount of bytes which were send back to client
  *              or -1 if error occurred     
  */
@@ -105,6 +105,21 @@ int DoIPServer::receiveMessage() {
         if(aliveCheckTimer.active) {
             aliveCheckTimer.resetTimer();
         }
+    
+        int sendedBytes = reactToReceivedTcpMessage(readedBytes);
+        
+        return sendedBytes;
+    }
+    return -1;
+      
+}
+
+/*
+ * Receives a message from the client and determine how to process the message
+ * @return      amount of bytes which were send back to client
+ *              or -1 if error occurred     
+ */
+int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
 
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
@@ -172,13 +187,12 @@ int DoIPServer::receiveMessage() {
                 return -1;
             }
         }  
-    }
-    
-    return -1;
+        return -1;
 }
 
+
 /*
- * Receives a udp message and determine how to process the message
+ * Receives a udp message and calls reactToReceivedUdpMessage method
  * @return      amount of bytes which were send back to client
  *              or -1 if error occurred     
  */
@@ -189,6 +203,22 @@ int DoIPServer::receiveUdpMessage(){
     int readedBytes = recvfrom(server_socket_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
     if(readedBytes > 0 && !aliveCheckTimer.timeout) {
+    
+        int sendedBytes = reactToReceivedUdpMessage(readedBytes);
+    
+        return sendedBytes;
+    }
+    return -1;
+}
+
+
+/*
+ * Receives a udp message and determine how to process the message
+ * @return      amount of bytes which were send back to client
+ *              or -1 if error occurred     
+ */
+int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
+        
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
 
@@ -227,11 +257,10 @@ int DoIPServer::receiveUdpMessage(){
                 std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
                 return -1;
             }
-        }
-    }
-    
-    return -1;
+        }   
+        return -1;
 }
+
 
 /**
  * Sends a message back to the connected client
