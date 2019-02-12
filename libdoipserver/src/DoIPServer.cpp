@@ -100,9 +100,18 @@ int DoIPServer::receiveMessage() {
 
     int readedBytes = recv(client_socket_tcp, data, _MaxDataSize, 0);
 
-    int sendedBytes = reactToReceivedTcpMessage(readedBytes);
+    if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
+        //if alive check timouts should be possible, reset timer when message received
+        if(aliveCheckTimer.active) {
+            aliveCheckTimer.resetTimer();
+        }
     
-    return sendedBytes;
+        int sendedBytes = reactToReceivedTcpMessage(readedBytes);
+        
+        return sendedBytes;
+    }
+    return -1;
+      
 }
 
 /*
@@ -111,12 +120,6 @@ int DoIPServer::receiveMessage() {
  *              or -1 if error occurred     
  */
 int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
-    
-    if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
-        //if alive check timouts should be possible, reset timer when message received
-        if(aliveCheckTimer.active) {
-            aliveCheckTimer.resetTimer();
-        }
 
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
@@ -184,8 +187,7 @@ int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
                 return -1;
             }
         }  
-    }
-    return -1;
+        return -1;
 }
 
 
@@ -200,10 +202,13 @@ int DoIPServer::receiveUdpMessage(){
     unsigned int length = sizeof(serverAddress);   
     int readedBytes = recvfrom(server_socket_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
-    int sendedBytes = reactToReceivedUdpMessage(readedBytes);
+    if(readedBytes > 0 && !aliveCheckTimer.timeout) {
     
-    return sendedBytes;
+        int sendedBytes = reactToReceivedUdpMessage(readedBytes);
     
+        return sendedBytes;
+    }
+    return -1;
 }
 
 
@@ -213,8 +218,7 @@ int DoIPServer::receiveUdpMessage(){
  *              or -1 if error occurred     
  */
 int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
-    
-    if(readedBytes > 0 && !aliveCheckTimer.timeout) {
+        
         dataLength = readedBytes;
         GenericHeaderAction action = parseGenericHeader(data, readedBytes);
 
@@ -253,12 +257,8 @@ int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
                 std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
                 return -1;
             }
-        }
-    }
-    
-    return -1;
-
-    
+        }   
+        return -1;
 }
 
 
