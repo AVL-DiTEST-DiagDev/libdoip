@@ -8,11 +8,15 @@ C/C++ library for Diagnostics over IP (DoIP)
 git clone https://github.com/GerritRiesch94/libdoip
 ```
 
-2. Enter the directory 'libdoip' and build the source files with:
+2. Enter the directory 'libdoip' and build the library with:
 ```
-sudo make
+make
 ```
-sudo is required to install the builded libraries and the headers into `/usr/lib/libdoip`.
+
+3. To install the builded library into `/usr/lib/libdoip` use:
+```
+sudo make install
+```
 
 ### Installing Google Test Framework
 
