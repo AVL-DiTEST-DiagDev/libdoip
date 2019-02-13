@@ -92,15 +92,6 @@ TEST_F(GenericHeaderTest, KnownPayloadType_DiagnosticMessage) {
 }
 
 /*
-* Checks if a too long message returns the correct response type and NACK code (0x02)
-*/
-TEST_F(GenericHeaderTest, MessageLength) {
-	GenericHeaderAction action = parseGenericHeader(request, 4096);
-	ASSERT_EQ(action.type, PayloadType::NEGATIVEACK);
-	ASSERT_EQ(action.value, 0x02);
-}
-
-/*
 * Checks if a wrong routing activation payload length return the correct response type and NACK code (0x04)
 */
 TEST_F(GenericHeaderTest, WrongRoutingActivationLength) {
