@@ -37,10 +37,10 @@ GenericHeaderAction parseGenericHeader(unsigned char* data, int dataLenght) {
         else if(data[2] == 0x80 && data[3] == 0x01) {   //Value of Diagnose Message = 0x8001
             messagePayloadType = PayloadType::DIAGNOSTICMESSAGE;
         } 
-        else if(data[2] == 0x80 && data[3] == 0x02) {   //Value of Diagnostic Message positive ack =
+        else if(data[2] == 0x80 && data[3] == 0x02) {   //Value of Diagnostic Message positive ack = 0x8002
             messagePayloadType = PayloadType::DIAGNOSTICPOSITIVEACK;
         } 
-        else if(data[2] == 0x80 && data[3] == 0x03) {   //Value of Diagnostic Message negative ack =
+        else if(data[2] == 0x80 && data[3] == 0x03) {   //Value of Diagnostic Message negative ack = 0x8003
             messagePayloadType = PayloadType::DIAGNOSTICNEGATIVEACK;
         } else {
             //Unknown Payload Type --> Send Generic DoIP Header NACK

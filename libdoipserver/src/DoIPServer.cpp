@@ -4,7 +4,7 @@
  * Set up a tcp socket, so the socket is ready to accept a connection 
  */
 void DoIPServer::setupTcpSocket() {
-    
+
     server_socket_tcp = socket(AF_INET, SOCK_STREAM, 0);
 
     serverAddress.sin_family = AF_INET;
@@ -88,7 +88,6 @@ void DoIPServer::triggerDisconnection() {
             std::cout << "Disconnecting failed. Try Again" << std::endl;
         }
     }
-    
 }
 
 /*
@@ -96,7 +95,7 @@ void DoIPServer::triggerDisconnection() {
  * @return      amount of bytes which were send back to client
  *              or -1 if error occurred     
  */
-int DoIPServer::receiveMessage() {
+int DoIPServer::receiveTcpMessage() {
 
     int readedBytes = recv(client_socket_tcp, data, _MaxDataSize, 0);
 
@@ -121,73 +120,73 @@ int DoIPServer::receiveMessage() {
  */
 int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
 
-        dataLength = readedBytes;
-        GenericHeaderAction action = parseGenericHeader(data, readedBytes);
-       
-        int sendedBytes;
-        switch(action.type) {
-            case PayloadType::NEGATIVEACK: {
-                //send NACK
-                sendedBytes = sendNegativeAck(action.value);
-                
-                if(action.value == _IncorrectPatternFormatCode || 
-                        action.value == _InvalidPayloadLengthCode) {
-                    closeSocket();
-                    return -1;
-                }
-                
-                return sendedBytes;
-            }
-            
-            case PayloadType::ROUTINGACTIVATIONREQUEST: {
-                //start routing activation handler with the received message
-                unsigned char result = parseRoutingActivation(data);
-                unsigned char clientAddress [2] = {data[8], data[9]};
-                
-                unsigned char* message = createRoutingActivationResponse(clientAddress, result);
-                sendedBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
-                
-                if(result == _UnknownSourceAddressCode || 
-                        result == _UnsupportedRoutingTypeCode) {
-                    closeSocket();
-                    return -1;
-                } else {
-                    //Routing Activation Request was successfull, save address of the client
-                    routedClientAddress = new unsigned char[2];
-                    routedClientAddress[0] = data[8];
-                    routedClientAddress[1] = data[9];
-                    
-                    //start alive check timer
-                    if(!aliveCheckTimer.active) {
-                        aliveCheckTimer.cb = std::bind(&DoIPServer::aliveCheckTimeout,this);
-                        aliveCheckTimer.startTimer();
-                    }
-                }
+    dataLength = readedBytes;
+    GenericHeaderAction action = parseGenericHeader(data, readedBytes);
 
-                return sendedBytes;
-            }
-            
-            case PayloadType::ALIVECHECKRESPONSE: {
-                return 0;
-            }
-				
-            case PayloadType::DIAGNOSTICMESSAGE: {
-                              
-                unsigned char target_address [2] = {data[10], data[11]};           
-                bool ack = notify_application(target_address);
-                
-                if(ack)
-                    parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
-                
-                break;
-            }
-            
-            default: {
-                std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
+    int sendedBytes;
+    switch(action.type) {
+        case PayloadType::NEGATIVEACK: {
+            //send NACK
+            sendedBytes = sendNegativeAck(action.value);
+
+            if(action.value == _IncorrectPatternFormatCode || 
+                    action.value == _InvalidPayloadLengthCode) {
+                closeSocket();
                 return -1;
             }
-        }  
-        return -1;
+
+            return sendedBytes;
+        }
+
+        case PayloadType::ROUTINGACTIVATIONREQUEST: {
+            //start routing activation handler with the received message
+            unsigned char result = parseRoutingActivation(data);
+            unsigned char clientAddress [2] = {data[8], data[9]};
+
+            unsigned char* message = createRoutingActivationResponse(clientAddress, result);
+            sendedBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
+
+            if(result == _UnknownSourceAddressCode || 
+                    result == _UnsupportedRoutingTypeCode) {
+                closeSocket();
+                return -1;
+            } else {
+                //Routing Activation Request was successfull, save address of the client
+                routedClientAddress = new unsigned char[2];
+                routedClientAddress[0] = data[8];
+                routedClientAddress[1] = data[9];
+
+                //start alive check timer
+                if(!aliveCheckTimer.active) {
+                    aliveCheckTimer.cb = std::bind(&DoIPServer::aliveCheckTimeout,this);
+                    aliveCheckTimer.startTimer();
+                }
+            }
+
+            return sendedBytes;
+        }
+
+        case PayloadType::ALIVECHECKRESPONSE: {
+            return 0;
+        }
+
+        case PayloadType::DIAGNOSTICMESSAGE: {
+
+            unsigned char target_address [2] = {data[10], data[11]};           
+            bool ack = notify_application(target_address);
+
+            if(ack)
+                parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
+
+            break;
+        }
+
+        default: {
+            std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
+            return -1;
+        }
+    }  
+    return -1;
 }
 
 
@@ -219,46 +218,45 @@ int DoIPServer::receiveUdpMessage(){
  */
 int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
         
-        dataLength = readedBytes;
-        GenericHeaderAction action = parseGenericHeader(data, readedBytes);
+    dataLength = readedBytes;
+    GenericHeaderAction action = parseGenericHeader(data, readedBytes);
 
-        int sendedBytes;
-        switch(action.type) {
+    int sendedBytes;
+    switch(action.type) {
 
-            case PayloadType::VEHICLEIDENTRESPONSE:{    //server should not send a negative ACK if he receives the sended VehicleIdentificationAnnouncement
-                
+        case PayloadType::VEHICLEIDENTRESPONSE:{    //server should not send a negative ACK if he receives the sended VehicleIdentificationAnnouncement
+            return -1;
+        }
+
+        case PayloadType::NEGATIVEACK: {
+            //send NACK
+            unsigned char* message = createGenericHeader(action.type, _NACKLength);
+            message[8] = action.value;
+            sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _NACKLength);
+
+            if(action.value == _IncorrectPatternFormatCode || 
+                    action.value == _InvalidPayloadLengthCode) {
+                closeSocket();
                 return -1;
+            } else {
+                //discard message when value 0x01, 0x02, 0x03
             }
-            
-            case PayloadType::NEGATIVEACK: {
-                //send NACK
-                unsigned char* message = createGenericHeader(action.type, _NACKLength);
-                message[8] = action.value;
-                sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _NACKLength);
+            return sendedBytes;
+        }
 
-                if(action.value == _IncorrectPatternFormatCode || 
-                        action.value == _InvalidPayloadLengthCode) {
-                    closeSocket();
-                    return -1;
-                } else {
-                    //discard message when value 0x01, 0x02, 0x03
-                }
-                return sendedBytes;
-            }
+        case PayloadType::VEHICLEIDENTREQUEST: {
+            unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
+            sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);   
 
-            case PayloadType::VEHICLEIDENTREQUEST: {
-                unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
-                sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);   
-                
-                return sendedBytes;
-            }
+            return sendedBytes;
+        }
 
-            default: { 
-                std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
-                return -1;
-            }
-        }   
-        return -1;
+        default: { 
+            std::cerr << "not handled payload type occured in receiveUdpMessage()" << std::endl;
+            return -1;
+        }
+    }   
+    return -1;
 }
 
 
@@ -276,14 +274,11 @@ int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
 
 
 int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
-
-    
     //if the server receives a message from a client, than the response should be send back to the client address and port
     clientAddress.sin_port = serverAddress.sin_port;
     clientAddress.sin_addr.s_addr = serverAddress.sin_addr.s_addr;
     
     int result = sendto(server_socket_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
-    
     return result;
 }
 
@@ -373,15 +368,15 @@ void DoIPServer::setA_DoIP_Announce_Interval(int Interval){
  * @param value     received payload
  * @param length    length of received payload
  */
-void DoIPServer::receiveDiagnosticPayload(unsigned char* address, unsigned char* value, int length) {
+void DoIPServer::receiveDiagnosticPayload(unsigned char* address, unsigned char* data, int length) {
 
     printf("DoiPServer received from server application: ");
     for(int i = 0; i < length; i++) {
-        printf("0x%x ", value[i]);    
+        printf("0x%x ", data[i]);    
     }
     printf("\n");
     
-    unsigned char* message = createDiagnosticMessage(address, routedClientAddress, value, length);  
+    unsigned char* message = createDiagnosticMessage(address, routedClientAddress, data, length);  
     sendMessage(message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + length);
 }
 
@@ -441,8 +436,8 @@ void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotificatio
 }
 
 void DoIPServer::sendDiagnosticAck(bool ackType, unsigned char ackCode) {
-    unsigned char data_TA [2] = { 0x0E, 0x00 };
-    unsigned char data_SA [2] = { 0xE0, 0x00 };
+    unsigned char data_TA [2] = { routedClientAddress[0], routedClientAddress[1] };
+    unsigned char data_SA [2] = { LogicalAddress[0], LogicalAddress[1] };
     
     unsigned char* message = createDiagnosticACK(ackType, data_SA, data_TA, ackCode);
     sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
