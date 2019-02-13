@@ -29,7 +29,7 @@ CLIENTOBJS = $(patsubst $(CLIENTTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(CL
 
 .PHONY: all clean
 
-all: env $(BUILDPATH)/$(COMMONTARGET).so $(BUILDPATH)/$(SERVERTARGET).so $(BUILDPATH)/$(CLIENTTARGET).so test
+all: env $(BUILDPATH)/$(COMMONTARGET).so $(BUILDPATH)/$(SERVERTARGET).so $(BUILDPATH)/$(CLIENTTARGET).so test install
 
 env:
 	mkdir -p $(BUILDPATH)
@@ -57,4 +57,11 @@ $(BUILDPATH)/$(CLIENTTARGET).so: $(CLIENTOBJS)
 	
 test:
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -I $(SERVERTARGET)/$(INCPATH) -I $(CLIENTTARGET)/$(INCPATH) $(COMMONSOURCE) $(SERVERSOURCE) $(CLIENTSOURCE) -o runTest $(TESTSOURCE) $(TESTFLAGS) 
+	
+install:
+	install -d /usr/lib/libdoip
+	install -d /usr/lib/libdoip/include
+	install build/*.so /usr/lib/libdoip
+	install libdoipcommon/include/*.h /usr/lib/libdoip/include
+	install libdoipserver/include/*.h /usr/lib/libdoip/include
 	

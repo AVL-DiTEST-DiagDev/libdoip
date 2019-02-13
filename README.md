@@ -1,6 +1,19 @@
 # libdoip
 C/C++ library for Diagnostics over IP (DoIP)
 
+### Installing library for Diagnostics over IP
+
+1. To install the library on the system, first get the source files with:
+```
+git clone https://github.com/GerritRiesch94/libdoip
+```
+
+2. Enter the directory 'libdoip' and build the source files with:
+```
+sudo make
+```
+sudo is required to install the builded libraries and the headers into `/usr/lib/libdoip`.
+
 ### Installing Google Test Framework
 
 In order to compile the unit tests, the Google Test Framework is required to be installed on the system.
