@@ -1,26 +1,67 @@
 CXX = g++
 
-CPPFLAGS = -g -Wall -Wextra
+CPPFLAGS = -g -Wall -Wextra -std=c++11
 LDFLAGS = -shared
+TESTFLAGS = -g -L/usr/lib -lgtest -lgtest_main -lpthread
 
 SRCPATH = src
 INCPATH = include
 BUILDPATH = build
+TESTPATH = test
+
+COMMONTARGET = libdoipcommon
+SERVERTARGET = libdoipserver
+CLIENTTARGET = libdoipclient
 
 # List of all source files, separated by whitespace
-SOURCEFILES = example.cpp
+COMMONSOURCE = $(wildcard $(COMMONTARGET)/$(SRCPATH)/*.cpp)
+SERVERSOURCE = $(wildcard $(SERVERTARGET)/$(SRCPATH)/*.cpp)
+CLIENTSOURCE = $(wildcard $(CLIENTTARGET)/$(SRCPATH)/*.cpp)
 
-OBJS = $(subst .cpp,.o,$(SOURCEFILES))
+TESTSOURCE = TestRunner.cpp
+TESTSOURCE += $(wildcard $(COMMONTARGET)/test/*.cpp)
+TESTSOURCE += $(wildcard $(SERVERTARGET)/test/*.cpp)
+TESTSOURCE += $(wildcard $(CLIENTTARGET)/test/*.cpp)
+
+COMMONOBJS = $(patsubst $(COMMONTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(COMMONSOURCE))
+SERVEROBJS = $(patsubst $(SERVERTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(SERVERSOURCE))
+CLIENTOBJS = $(patsubst $(CLIENTTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(CLIENTSOURCE))
 
 .PHONY: all clean
 
-all: $(BUILDPATH)/libdoip.so
+all: env $(BUILDPATH)/$(COMMONTARGET).so $(BUILDPATH)/$(SERVERTARGET).so $(BUILDPATH)/$(CLIENTTARGET).so test
+
+env:
+	mkdir -p $(BUILDPATH)
 
 clean:
 	rm -rf $(BUILDPATH)/*.*    
 
-$(BUILDPATH)/$(OBJS): $(SRCPATH)/$(SOURCEFILES)
-	$(CXX) $(CPPFLAGS) -I $(INCPATH) -fPIC -c $< -o $@
+$(BUILDPATH)/%.o: $(COMMONTARGET)/$(SRCPATH)/%.cpp
+	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
+	
+$(BUILDPATH)/%.o: $(SERVERTARGET)/$(SRCPATH)/%.cpp
+	$(CXX) $(CPPFLAGS) -I $(SERVERTARGET)/$(INCPATH) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
+	
+$(BUILDPATH)/%.o: $(CLIENTTARGET)/$(SRCPATH)/%.cpp
+	$(CXX) $(CPPFLAGS) -I $(CLIENTTARGET)/$(INCPATH) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
     
-$(BUILDPATH)/libdoip.so: $(BUILDPATH)/$(OBJS)
+$(BUILDPATH)/$(COMMONTARGET).so: $(COMMONOBJS)
 	$(CXX) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
+	
+$(BUILDPATH)/$(SERVERTARGET).so: $(SERVEROBJS)
+	$(CXX) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
+	
+$(BUILDPATH)/$(CLIENTTARGET).so: $(CLIENTOBJS)
+	$(CXX) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
+	
+test:
+	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -I $(SERVERTARGET)/$(INCPATH) -I $(CLIENTTARGET)/$(INCPATH) $(COMMONSOURCE) $(SERVERSOURCE) $(CLIENTSOURCE) -o runTest $(TESTSOURCE) $(TESTFLAGS) 
+	
+install:
+	install -d /usr/lib/libdoip
+	install -d /usr/lib/libdoip/include
+	install build/*.so /usr/lib/libdoip
+	install libdoipcommon/include/*.h /usr/lib/libdoip/include
+	install libdoipserver/include/*.h /usr/lib/libdoip/include
+	
