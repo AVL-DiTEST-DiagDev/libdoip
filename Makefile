@@ -9,6 +9,8 @@ INCPATH = include
 BUILDPATH = build
 TESTPATH = test
 
+TESTBINARY = runTest
+
 COMMONTARGET = libdoipcommon
 SERVERTARGET = libdoipserver
 CLIENTTARGET = libdoipclient
@@ -35,7 +37,8 @@ env:
 	mkdir -p $(BUILDPATH)
 
 clean:
-	rm -rf $(BUILDPATH)/*.*    
+	rm -rf $(BUILDPATH)/*.*
+	rm -rf $(TESTBINARY)    
 
 $(BUILDPATH)/%.o: $(COMMONTARGET)/$(SRCPATH)/%.cpp
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
@@ -56,7 +59,7 @@ $(BUILDPATH)/$(CLIENTTARGET).so: $(CLIENTOBJS)
 	$(CXX) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
 	
 test:
-	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -I $(SERVERTARGET)/$(INCPATH) -I $(CLIENTTARGET)/$(INCPATH) $(COMMONSOURCE) $(SERVERSOURCE) $(CLIENTSOURCE) -o runTest $(TESTSOURCE) $(TESTFLAGS) 
+	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -I $(SERVERTARGET)/$(INCPATH) -I $(CLIENTTARGET)/$(INCPATH) $(COMMONSOURCE) $(SERVERSOURCE) $(CLIENTSOURCE) -o $(TESTBINARY)  $(TESTSOURCE) $(TESTFLAGS) 
 	
 install:
 	install -d /usr/lib/libdoip
