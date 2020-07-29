@@ -2,7 +2,7 @@ name: libdoip CI
 
 on:
     push:
-    pull_requests:
+    pull_request:
 
 jobs:
     build:
