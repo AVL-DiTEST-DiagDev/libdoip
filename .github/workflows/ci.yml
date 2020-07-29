@@ -1,0 +1,16 @@
+name: libdoip CI
+description: Build and Test libdoip
+author: Tobias Jaehnel
+
+on: push
+
+jobs:
+    build:
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v1
+            - name: Build libdoip
+            run: ./makeindocker.sh
+            - name: Test libdoip
+            run: ./runtestindocker.sh
+        
