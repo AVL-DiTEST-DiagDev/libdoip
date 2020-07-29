@@ -9,8 +9,8 @@ jobs:
         runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v1
-            - name: Build libdoip
-            run: ./makeindocker.sh
-            - name: Test libdoip
-            run: ./runtestindocker.sh
+            - name: Build
+              run: ./makeindocker.sh
+            - name: Test
+              run: ./runtestindocker.sh
         
