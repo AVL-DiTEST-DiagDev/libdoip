@@ -1,6 +1,4 @@
 name: libdoip CI
-description: Build and Test libdoip
-author: Tobias Jaehnel
 
 on: push
 
