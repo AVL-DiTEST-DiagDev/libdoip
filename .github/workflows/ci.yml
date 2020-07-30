@@ -5,10 +5,19 @@ on:
     pull_request:
 
 jobs:
+    sonar:
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                # Disabling shallow clone is recommended for improving relevancy of reporting
+                fetch-depth: 0
+            - name: Sonar Static Code Analysis
+              run: ./runsonarscanner.sh ${{ secrets.SONAR_TOKEN }}
     build:
         runs-on: ubuntu-18.04
         steps:
-            - uses: actions/checkout@v1
+            - uses: actions/checkout@v2
             - name: Build
               run: ./makeindocker.sh
             - name: Test

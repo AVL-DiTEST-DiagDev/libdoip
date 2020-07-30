@@ -32,5 +32,11 @@
 *.app
 runTest
 
+# Reports
+testOutput.xml
+
 # Folder
 build/
+bw-output/
+.scannerwork/
+
