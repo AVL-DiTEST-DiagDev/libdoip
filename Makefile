@@ -40,6 +40,8 @@ env:
 clean:
 	rm -rf $(BUILDPATH)/*.*
 	rm -rf $(TESTBINARY)
+	rm -rf *.gcov *.gcda *.gcno
+	rm -rf testOutput.xml
 
 $(BUILDPATH)/%.o: $(COMMONTARGET)/$(SRCPATH)/%.cpp
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
