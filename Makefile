@@ -1,8 +1,9 @@
 CXX = g++
+GCOV = gcov
 
 CPPFLAGS = -g -Wall -Wextra -std=c++11
 LDFLAGS = -shared
-TESTFLAGS = -g -L/usr/lib -lgtest -lgtest_main -lpthread
+TESTFLAGS = -g -L/usr/lib -lgtest -lgtest_main -lpthread -O0 --coverage
 
 SRCPATH = src
 INCPATH = include
@@ -29,7 +30,7 @@ COMMONOBJS = $(patsubst $(COMMONTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(CO
 SERVEROBJS = $(patsubst $(SERVERTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(SERVERSOURCE))
 CLIENTOBJS = $(patsubst $(CLIENTTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(CLIENTSOURCE))
 
-.PHONY: all clean
+.PHONY: all clean coverage
 
 all: env $(BUILDPATH)/$(COMMONTARGET).so $(BUILDPATH)/$(SERVERTARGET).so $(BUILDPATH)/$(CLIENTTARGET).so test
 
@@ -38,7 +39,7 @@ env:
 
 clean:
 	rm -rf $(BUILDPATH)/*.*
-	rm -rf $(TESTBINARY)    
+	rm -rf $(TESTBINARY)
 
 $(BUILDPATH)/%.o: $(COMMONTARGET)/$(SRCPATH)/%.cpp
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
@@ -61,6 +62,9 @@ $(BUILDPATH)/$(CLIENTTARGET).so: $(CLIENTOBJS)
 test:
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -I $(SERVERTARGET)/$(INCPATH) -I $(CLIENTTARGET)/$(INCPATH) $(COMMONSOURCE) $(SERVERSOURCE) $(CLIENTSOURCE) -o $(TESTBINARY)  $(TESTSOURCE) $(TESTFLAGS) 
 	
+coverage:
+	$(GCOV) -a $(COMMONSOURCE) $(SERVERSOURCE) $(CLIENTSOURCE) -o .
+
 install:
 	install -d /usr/lib/libdoip
 	install -d /usr/lib/libdoip/include

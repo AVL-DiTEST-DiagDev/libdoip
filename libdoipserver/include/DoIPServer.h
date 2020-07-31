@@ -21,7 +21,7 @@
 using CloseConnectionCallback = std::function<void()>;
 
 const int _ServerPort = 13400;
-const unsigned int _MaxDataSize = 0xFFFFu;
+const unsigned int _MaxDataSize = 0xFFFFU;
 
 class DoIPServer {
 

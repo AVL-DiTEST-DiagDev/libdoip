@@ -35,6 +35,11 @@ runTest
 # Reports
 testOutput.xml
 
+# coverage information
+*.gcov
+*.gcda
+*.gcno
+
 # Folder
 build/
 bw-output/
