@@ -14,6 +14,7 @@ jobs:
                 fetch-depth: 0
             - name: Sonar Static Code Analysis
               run: ./runsonarscanner.sh ${{ secrets.SONAR_TOKEN }} $GITHUB_REF
+
     build:
         runs-on: ubuntu-18.04
         steps:
@@ -23,3 +24,12 @@ jobs:
             - name: Test
               run: ./runtestindocker.sh
         
+    build.raspberrypi:
+        runs-on: ubuntu-18.04
+        steps:
+            - uses: actions/checkout@v2
+            - name: Build
+              run: ./makeindocker.rpi.sh
+            - name: Test
+              run: ./runtestindocker.rpi.sh
+                
