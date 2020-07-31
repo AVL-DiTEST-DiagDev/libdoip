@@ -24,7 +24,7 @@ jobs:
             - name: Test
               run: ./runtestindocker.sh
         
-    build.raspberrypi:
+    build_raspberrypi:
         runs-on: ubuntu-18.04
         steps:
             - uses: actions/checkout@v2
