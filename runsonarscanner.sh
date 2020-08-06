@@ -31,8 +31,8 @@ then
 fi
 
 docker build -t libdoipbuild .
-docker run --rm -v "$(pwd):/proj" -w /proj libdoipbuild build-wrapper-linux-x86-64 --out-dir bw-output make clean all
-docker run --rm -v "$(pwd):/proj" -w /proj libdoipbuild ./runTest --gtest_output="xml:./testOutput.xml"
+docker run --rm -v "$(pwd):/proj" -w /proj libdoipbuild build-wrapper-linux-x86-64 --out-dir bw-output make clean coverage_build
+docker run --rm -v "$(pwd):/proj" -w /proj libdoipbuild ./build_cov/runTest --gtest_output="xml:./testOutput.xml"
 docker run --rm -v "$(pwd):/proj" -w /proj libdoipbuild make coverage
 docker run --rm -v "$(pwd):/proj" -w /proj libdoipbuild sonar-scanner -Dsonar.login="$1" $SONAR_BRANCH
 
