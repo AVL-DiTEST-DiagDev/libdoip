@@ -54,7 +54,7 @@ SERVEROBJS_COV = $(patsubst $(SERVERTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH_COV)/%
 CLIENTOBJS_COV = $(patsubst $(CLIENTTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH_COV)/%.o, $(CLIENTSOURCE))
 ALLOBJS_COV = $(COMMONOBJS_COV) $(SERVEROBJS_COV) $(CLIENTOBJS_COV)
 
-.PHONY: all clean test coverage
+.PHONY: all env clean test coverage
 
 all: env $(BUILDPATH)/$(COMMONTARGET).so $(BUILDPATH)/$(SERVERTARGET).so $(BUILDPATH)/$(CLIENTTARGET).so test
 
@@ -64,9 +64,9 @@ env:
 	mkdir -p $(BUILDPATH_COV)
 
 clean:
-	rm -rf $(BUILDPATH)/*.*
+	rm -rf $(BUILDPATH)/*
 	rm -rf $(BUILDPATH_TEST)/*
-	rm -rf $(BUILDPATH_COV)/*.*
+	rm -rf $(BUILDPATH_COV)/*
 	rm -rf $(TESTBINARY)
 	rm -rf *.gcov *.gcda *.gcno
 	rm -rf testOutput.xml
@@ -91,7 +91,7 @@ $(BUILDPATH)/$(CLIENTTARGET).so: $(CLIENTOBJS)
 	
 # Test
 
-test: $(BUILDPATH_TEST)/$(TESTBINARY)
+test: env $(BUILDPATH_TEST)/$(TESTBINARY)
 
 $(BUILDPATH_TEST)/%.o: $(COMMONTARGET)/$(TESTPATH)/%.cpp
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
@@ -115,7 +115,7 @@ coverage:
 	$(GCOV) -a $(ALLSOURCE) -o $(BUILDPATH_COV)
 	mv *.gcov $(BUILDPATH_COV)
 
-coverage_build: $(BUILDPATH_COV)/$(TESTBINARY)
+coverage_build: env $(BUILDPATH_COV)/$(TESTBINARY)
 
 $(BUILDPATH_COV)/%.o: $(COMMONTARGET)/$(SRCPATH)/%.cpp
 	$(CXX) $(CPPFLAGS_COV) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
