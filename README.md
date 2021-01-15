@@ -1,6 +1,10 @@
 # libdoip
 C/C++ library for Diagnostics over IP (DoIP)
 
+### CI Status
+* Master: ![CI status Master](https://github.com/AVL-DiTEST-DiagDev/libdoip/workflows/.github/workflows/ci.yml/badge.svg?branch=master)
+* Dev: ![CI status Dev](https://github.com/AVL-DiTEST-DiagDev/libdoip/workflows/.github/workflows/ci.yml/badge.svg?branch=dev)
+
 ### Installing library for Diagnostics over IP
 
 1. To install the library on the system, first get the source files with:

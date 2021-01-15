@@ -9,6 +9,7 @@
 #include <string.h>
 #include <net/if.h>
 #include <unistd.h>
+#include <climits>
 #include "DoIPGenericHeaderHandler.h"
 #include "RoutingActivationHandler.h"
 #include "VehicleIdentificationHandler.h"
@@ -20,7 +21,7 @@
 using CloseConnectionCallback = std::function<void()>;
 
 const int _ServerPort = 13400;
-const unsigned int _MaxDataSize = 4294967294;
+const unsigned int _MaxDataSize = 0xFFFFU;
 
 class DoIPServer {
 

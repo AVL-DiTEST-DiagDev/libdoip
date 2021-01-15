@@ -1,0 +1,4 @@
+FROM balenalib/raspberrypi3-debian:buster
+
+RUN install_packages build-essential libgtest-dev
+
