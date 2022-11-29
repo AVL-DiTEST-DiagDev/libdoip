@@ -39,3 +39,10 @@ void AliveCheckTimer::resetTimer() {
 void AliveCheckTimer::setTimer(uint16_t seconds) {
     maxSeconds = seconds;
 }
+
+AliveCheckTimer::~AliveCheckTimer() {
+    disabled = true;
+    if(timerThreads.size() > 0) {
+        timerThreads.at(0).join();
+    }
+}
