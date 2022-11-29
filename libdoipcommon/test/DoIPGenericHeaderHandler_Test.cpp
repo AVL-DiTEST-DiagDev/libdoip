@@ -95,8 +95,7 @@ TEST_F(GenericHeaderTest, KnownPayloadType_DiagnosticMessage) {
 * Checks if a wrong routing activation payload length return the correct response type and NACK code (0x04)
 */
 TEST_F(GenericHeaderTest, WrongRoutingActivationLength) {
-	//currently the payload type specific length is tested with subtracting the generic header length
-	//from the received message length and compare it with a hardcoded value, 7 for routing activation request
+	request[7] = 0x08; // Use invalid routing activation payload length 8
 	GenericHeaderAction action = parseGenericHeader(request, 20);
 	ASSERT_EQ(action.type, PayloadType::NEGATIVEACK);
 	ASSERT_EQ(action.value, 0x04);

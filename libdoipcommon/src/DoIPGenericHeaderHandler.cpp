@@ -32,8 +32,6 @@ GenericHeaderAction parseGenericHeader(unsigned char* data, int dataLenght) {
         payloadLength |= (unsigned int)(data[6] <<  8);
         payloadLength |= (unsigned int)(data[7] <<  0);
 
-        cout << "payloadLength: " << dec << payloadLength << endl;
-
         //Check Payload Type
         PayloadType messagePayloadType;
         if(data[2] == 0x00 && data[3] == 0x05) {	//Value of RoutingActivationRequest = 0x0005
