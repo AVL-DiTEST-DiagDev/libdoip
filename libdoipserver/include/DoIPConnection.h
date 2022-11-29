@@ -24,16 +24,16 @@ const unsigned long _MaxDataSize = 0xFFFFFF;
 class DoIPConnection {
 
 public:
-    DoIPConnection(int tcpSocket): 
-        tcpSocket(tcpSocket) { };
+    DoIPConnection(int tcpSocket, unsigned short logicalGatewayAddress): 
+        tcpSocket(tcpSocket), logicalGatewayAddress(logicalGatewayAddress) { };
     
     int receiveTcpMessage();
-    void sendDiagnosticPayload(unsigned char* address, unsigned char* data, int length);
+    void sendDiagnosticPayload(unsigned short sourceAddress, unsigned char* data, int length);
     bool isSocketActive() { return tcpSocket != 0; };
 
     void triggerDisconnection();
     
-    void sendDiagnosticAck(unsigned char* sourceAddress, bool ackType, unsigned char ackCode);
+    void sendDiagnosticAck(unsigned short sourceAddress, bool ackType, unsigned char ackCode);
     int sendNegativeAck(unsigned char ackCode);
 
     const unsigned char* getData();
@@ -54,6 +54,7 @@ private:
     unsigned char data[_MaxDataSize];
     int dataLength;
     unsigned char* routedClientAddress;
+    unsigned short logicalGatewayAddress = 0x0000;
         
     void closeSocket();
 

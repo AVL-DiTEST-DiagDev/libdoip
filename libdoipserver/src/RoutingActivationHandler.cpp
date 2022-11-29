@@ -44,7 +44,7 @@ unsigned char parseRoutingActivation(unsigned char *data) {
  * @param responseCode      routing activation response code
  * @return                  complete routing activation response
  */
-unsigned char* createRoutingActivationResponse(unsigned char clientAddress[2],
+unsigned char* createRoutingActivationResponse(unsigned short sourceAddress, unsigned char clientAddress[2],
                                                 unsigned char responseCode) {
     
     unsigned char* message = createGenericHeader(PayloadType::ROUTINGACTIVATIONRESPONSE,
@@ -55,8 +55,8 @@ unsigned char* createRoutingActivationResponse(unsigned char clientAddress[2],
     message[9] = clientAddress[1];
     
     //logical address of DoIP entity
-    message[10] = 0x01;
-    message[11] = 0x00;
+    message[10] = (unsigned char)((sourceAddress >> 8) & 0xFF);
+    message[11] = (unsigned char)(sourceAddress & 0xFF);
     
     //routing activation response code
     message[12] = responseCode;

@@ -26,9 +26,7 @@ void DoIPConnection::closeSocket() {
  *              or -1 if error occurred     
  */
 int DoIPConnection::receiveTcpMessage() {
-
     int readedBytes = recv(tcpSocket, data, _MaxDataSize, 0);
-
     if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
         //if alive check timouts should be possible, reset timer when message received
         if(aliveCheckTimer.active) {
@@ -38,6 +36,9 @@ int DoIPConnection::receiveTcpMessage() {
         int sendedBytes = reactToReceivedTcpMessage(readedBytes);
         
         return sendedBytes;
+    } else {
+        closeSocket();
+        return 0;
     }
     return -1;
       
@@ -73,7 +74,7 @@ int DoIPConnection::reactToReceivedTcpMessage(int readedBytes){
             unsigned char result = parseRoutingActivation(data);
             unsigned char clientAddress [2] = {data[8], data[9]};
 
-            unsigned char* message = createRoutingActivationResponse(clientAddress, result);
+            unsigned char* message = createRoutingActivationResponse(logicalGatewayAddress, clientAddress, result);
             sendedBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
 
             if(result == _UnknownSourceAddressCode || 
@@ -155,7 +156,7 @@ void DoIPConnection::setGeneralInactivityTime(uint16_t seconds) {
  * @param value     received payload
  * @param length    length of received payload
  */
-void DoIPConnection::sendDiagnosticPayload(unsigned char* sourceAddress, unsigned char* data, int length) {
+void DoIPConnection::sendDiagnosticPayload(unsigned short sourceAddress, unsigned char* data, int length) {
 
     std::cout << "Sending diagnostic data: ";
     for(int i = 0; i < length; i++) {
@@ -196,11 +197,10 @@ void DoIPConnection::setCallback(DiagnosticCallback dc, DiagnosticMessageNotific
     close_connection = ccb;
 }
 
-void DoIPConnection::sendDiagnosticAck(unsigned char* sourceAddress, bool ackType, unsigned char ackCode) {
+void DoIPConnection::sendDiagnosticAck(unsigned short sourceAddress, bool ackType, unsigned char ackCode) {
     unsigned char data_TA [2] = { routedClientAddress[0], routedClientAddress[1] };
-    unsigned char data_SA [2] = { sourceAddress[0], sourceAddress[1] };
     
-    unsigned char* message = createDiagnosticACK(ackType, data_SA, data_TA, ackCode);
+    unsigned char* message = createDiagnosticACK(ackType, sourceAddress, data_TA, ackCode);
     sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
 }
 

@@ -18,14 +18,14 @@ void DoIPServer::setupTcpSocket() {
 /*
  *  Wait till a client attempts a connection and accepts it
  */
-DoIPConnection DoIPServer::waitForTcpConnection() {
+std::unique_ptr<DoIPConnection> DoIPServer::waitForTcpConnection() {
     //waits till client approach to make connection
     listen(server_socket_tcp, 5);                                                          
     int tcpSocket = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);
-    return DoIPConnection(tcpSocket);
+    return std::unique_ptr<DoIPConnection>(new DoIPConnection(tcpSocket, LogicalGatewayAddress));
 }
 
-void DoIPServer::setupUdpSocket(){
+void DoIPServer::setupUdpSocket() {
     
     server_socket_udp = socket(AF_INET, SOCK_DGRAM, 0);
     
@@ -158,9 +158,8 @@ void DoIPServer::setVIN( std::string VINString){
     VIN = VINString;
 }
 
-void DoIPServer::setLogicalGatewayAddress(const unsigned int inputLogAdd){
-    LogicalGatewayAddress[0] = (inputLogAdd >> 8) & 0xFF;
-    LogicalGatewayAddress[1] = inputLogAdd & 0xFF;
+void DoIPServer::setLogicalGatewayAddress(const unsigned short inputLogAdd){
+    LogicalGatewayAddress = inputLogAdd;
 }
 
 void DoIPServer::setEID(const uint64_t inputEID){
