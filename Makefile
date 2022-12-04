@@ -38,7 +38,7 @@ env:
 	mkdir -p $(BUILDPATH)
 
 clean:
-	rm -rf $(BUILDPATH)/*.*    
+	rm -rf $(BUILDPATH)/* 
 
 $(BUILDPATH)/%.o: $(COMMONTARGET)/$(SRCPATH)/%.cpp
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@

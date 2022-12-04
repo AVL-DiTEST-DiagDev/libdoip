@@ -19,8 +19,8 @@ bool serverActive = false;
  * @param data      message which was received
  * @param length    length of the message
  */
-void ReceiveFromLibrary(unsigned char* address, unsigned char* data, int length) {
-    cout << "DoIP Message received from 0x" << hex << (int)address[0] << (int)address[1] << ": ";
+void ReceiveFromLibrary(unsigned short address, unsigned char* data, int length) {
+    cout << "DoIP Message received from 0x" << hex << address << ": ";
     for(int i = 0; i < length; i++) {
         cout << hex << setw(2) << (int)data[i] << " ";
     }
@@ -46,7 +46,7 @@ void ReceiveFromLibrary(unsigned char* address, unsigned char* data, int length)
  * @param targetAddress     logical address to the ecu
  * @return                  If a positive or negative ACK should be send to the client
  */
-bool DiagnosticMessageReceived(unsigned char* targetAddress) {
+bool DiagnosticMessageReceived(unsigned short targetAddress) {
     (void)targetAddress;
     unsigned char ackCode;
 
@@ -102,9 +102,6 @@ void ConfigureDoipServer() {
     server.setLogicalGatewayAddress(LOGICAL_ADDRESS);
     server.setGID(0);
     server.setFAR(0);
-
-    // doipserver->setGeneralInactivityTime(doipConfig->getGeneralInactivity());
-
     server.setEID(0);
 
     // doipserver->setA_DoIP_Announce_Num(tempNum);

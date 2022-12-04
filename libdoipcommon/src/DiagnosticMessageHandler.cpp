@@ -20,7 +20,9 @@ unsigned char parseDiagnosticMessage(DiagnosticCallback callback, unsigned char 
         }
 
         //Pass the diagnostic message to the target network/transport layer
-        unsigned char target_address [2] = {data[10], data[11]};
+        unsigned short target_address = 0;
+        target_address |= ((unsigned short)data[10]) << 8U;
+        target_address |= (unsigned short)data[11];
 
         int cb_message_length = diagMessageLength - _DiagnosticMessageMinimumLength;
         unsigned char* cb_message = new unsigned char[cb_message_length];

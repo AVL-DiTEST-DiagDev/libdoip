@@ -103,7 +103,9 @@ int DoIPConnection::reactToReceivedTcpMessage(int readedBytes){
 
         case PayloadType::DIAGNOSTICMESSAGE: {
 
-            unsigned char target_address [2] = {data[10], data[11]};           
+            unsigned short target_address = 0;
+            target_address |= ((unsigned short)data[10]) << 8U;
+            target_address |= (unsigned short)data[11];
             bool ack = notify_application(target_address);
 
             if(ack)

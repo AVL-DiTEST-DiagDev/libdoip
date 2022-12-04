@@ -46,7 +46,6 @@ public:
     void setEID(const uint64_t inputEID);
     void setGID(const uint64_t inputGID);
     void setFAR(const unsigned int inputFAR);
-    void setGeneralInactivityTime(const uint16_t seconds);   
     void setA_DoIP_Announce_Num(int Num);
     void setA_DoIP_Announce_Interval(int Interval); 
 
