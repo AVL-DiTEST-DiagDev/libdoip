@@ -58,7 +58,7 @@ private:
         
     void closeSocket();
 
-    int reactToReceivedTcpMessage(int readedBytes);
+    int reactOnReceivedTcpMessage(int readedBytes);
     
     int sendMessage(unsigned char* message, int messageLenght);
     

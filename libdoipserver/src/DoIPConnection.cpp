@@ -26,16 +26,16 @@ void DoIPConnection::closeSocket() {
  *              or -1 if error occurred     
  */
 int DoIPConnection::receiveTcpMessage() {
-    int readedBytes = recv(tcpSocket, data, _MaxDataSize, 0);
-    if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
+    int readBytes = recv(tcpSocket, data, _MaxDataSize, 0);
+    if(readBytes > 0 && !aliveCheckTimer.timeout) {        
         //if alive check timouts should be possible, reset timer when message received
         if(aliveCheckTimer.active) {
             aliveCheckTimer.resetTimer();
         }
     
-        int sendedBytes = reactToReceivedTcpMessage(readedBytes);
+        int sentBytes = reactOnReceivedTcpMessage(readBytes);
         
-        return sendedBytes;
+        return sentBytes;
     } else {
         closeSocket();
         return 0;
@@ -49,16 +49,16 @@ int DoIPConnection::receiveTcpMessage() {
  * @return      amount of bytes which were send back to client
  *              or -1 if error occurred     
  */
-int DoIPConnection::reactToReceivedTcpMessage(int readedBytes){
+int DoIPConnection::reactOnReceivedTcpMessage(int readBytes){
 
-    dataLength = readedBytes;
-    GenericHeaderAction action = parseGenericHeader(data, readedBytes);
+    dataLength = readBytes;
+    GenericHeaderAction action = parseGenericHeader(data, readBytes);
 
-    int sendedBytes;
+    int sentBytes;
     switch(action.type) {
         case PayloadType::NEGATIVEACK: {
             //send NACK
-            sendedBytes = sendNegativeAck(action.value);
+            sentBytes = sendNegativeAck(action.value);
 
             if(action.value == _IncorrectPatternFormatCode || 
                     action.value == _InvalidPayloadLengthCode) {
@@ -66,7 +66,7 @@ int DoIPConnection::reactToReceivedTcpMessage(int readedBytes){
                 return -1;
             }
 
-            return sendedBytes;
+            return sentBytes;
         }
 
         case PayloadType::ROUTINGACTIVATIONREQUEST: {
@@ -75,7 +75,7 @@ int DoIPConnection::reactToReceivedTcpMessage(int readedBytes){
             unsigned char clientAddress [2] = {data[8], data[9]};
 
             unsigned char* message = createRoutingActivationResponse(logicalGatewayAddress, clientAddress, result);
-            sendedBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
+            sentBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
 
             if(result == _UnknownSourceAddressCode || 
                     result == _UnsupportedRoutingTypeCode) {
@@ -94,7 +94,7 @@ int DoIPConnection::reactToReceivedTcpMessage(int readedBytes){
                 }
             }
 
-            return sendedBytes;
+            return sentBytes;
         }
 
         case PayloadType::ALIVECHECKRESPONSE: {
@@ -109,7 +109,7 @@ int DoIPConnection::reactToReceivedTcpMessage(int readedBytes){
             bool ack = notify_application(target_address);
 
             if(ack)
-                parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
+                parseDiagnosticMessage(diag_callback, routedClientAddress, data, readBytes - _GenericHeaderLength);
 
             break;
         }
