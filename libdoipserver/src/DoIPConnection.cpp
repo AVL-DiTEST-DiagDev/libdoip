@@ -115,7 +115,7 @@ int DoIPConnection::reactOnReceivedTcpMessage(int readBytes){
         }
 
         default: {
-            std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
+            std::cerr << "Received message with unhandled payload type: " << action.type << std::endl;
             return -1;
         }
     }  
@@ -123,7 +123,7 @@ int DoIPConnection::reactOnReceivedTcpMessage(int readBytes){
 }
 
 void DoIPConnection::triggerDisconnection() {
-    std::cout << "Application request to disconnect Client from Server" << std::endl;
+    std::cout << "Application requested to disconnect Client from Server" << std::endl;
     closeSocket();
 }
 
