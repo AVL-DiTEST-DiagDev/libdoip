@@ -23,6 +23,7 @@ GenericHeaderAction parseGenericHeader(unsigned char* data, int dataLenght) {
             //Return Error, Protocol Version not correct
             action.type = PayloadType::NEGATIVEACK;
             action.value = _IncorrectPatternFormatCode;
+            action.payloadLength = 0;
             return action;
         }
 
@@ -31,6 +32,8 @@ GenericHeaderAction parseGenericHeader(unsigned char* data, int dataLenght) {
         payloadLength |= (unsigned int)(data[5] << 16);
         payloadLength |= (unsigned int)(data[6] <<  8);
         payloadLength |= (unsigned int)(data[7] <<  0);
+
+        action.payloadLength = payloadLength;
 
         //Check Payload Type
         PayloadType messagePayloadType;

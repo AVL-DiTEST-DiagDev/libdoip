@@ -11,24 +11,25 @@
  */
 unsigned char parseDiagnosticMessage(DiagnosticCallback callback, unsigned char sourceAddress [2],
                                     unsigned char* data, int diagMessageLength) {
-    
+    std::cout << "parse Diagnostic Message" << std::endl;
     if(diagMessageLength >= _DiagnosticMessageMinimumLength) {
         //Check if the received SA is registered on the socket
-        if(data[8] != sourceAddress[0] || data[9] != sourceAddress[1]) {
+        if(data[0] != sourceAddress[0] || data[1] != sourceAddress[1]) {
             //SA of received message is not registered on this TCP_DATA socket
             return _InvalidSourceAddressCode;
         }
 
+        std::cout << "source address valid" << std::endl;
         //Pass the diagnostic message to the target network/transport layer
         unsigned short target_address = 0;
-        target_address |= ((unsigned short)data[10]) << 8U;
-        target_address |= (unsigned short)data[11];
+        target_address |= ((unsigned short)data[2]) << 8U;
+        target_address |= (unsigned short)data[3];
 
         int cb_message_length = diagMessageLength - _DiagnosticMessageMinimumLength;
         unsigned char* cb_message = new unsigned char[cb_message_length];
 
         for(int i = _DiagnosticMessageMinimumLength; i < diagMessageLength; i++) {
-            cb_message[i - _DiagnosticMessageMinimumLength] = data[8+ i];
+            cb_message[i - _DiagnosticMessageMinimumLength] = data[i];
         }
 
         callback(target_address, cb_message, cb_message_length);

@@ -9,15 +9,15 @@ unsigned char parseRoutingActivation(unsigned char *data) {
     
     //Check if source address is known
     uint32_t address = 0;
-    address |= (uint32_t)data[8] << 8;
-    address |= (uint32_t)data[9];
+    address |= (uint32_t)data[0] << 8;
+    address |= (uint32_t)data[1];
     if(!checkSourceAddress(address)) {
         //send routing activation negative response code --> close socket
         return _UnknownSourceAddressCode;
     }
     
     //Check if routing activation type is supported
-    switch(data[10]) {
+    switch(data[2]) {
         case 0x00: {
             //Activation Type default
             break;

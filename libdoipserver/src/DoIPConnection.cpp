@@ -26,14 +26,31 @@ void DoIPConnection::closeSocket() {
  *              or -1 if error occurred     
  */
 int DoIPConnection::receiveTcpMessage() {
-    int readBytes = recv(tcpSocket, data, _MaxDataSize, 0);
-    if(readBytes > 0 && !aliveCheckTimer.timeout) {        
+    std::cout << "Waiting for DoIP Header..." << std::endl;
+    unsigned char genericHeader[_GenericHeaderLength];
+    unsigned int readBytes = receiveFixedNumberOfBytesFromTCP(_GenericHeaderLength, genericHeader);
+    if(readBytes == _GenericHeaderLength && !aliveCheckTimer.timeout) {
+        std::cout << "Received DoIP Header." << std::endl;
+        GenericHeaderAction doipHeaderAction = parseGenericHeader(genericHeader, _GenericHeaderLength);
+
+        unsigned char *payload = nullptr;
+        if(doipHeaderAction.payloadLength > 0) {
+            std::cout << "Waiting for " << doipHeaderAction.payloadLength << " bytes of payload..." << std::endl;
+            payload = new unsigned char[doipHeaderAction.payloadLength];
+            unsigned int receivedPayloadBytes = receiveFixedNumberOfBytesFromTCP(doipHeaderAction.payloadLength, payload);
+            if(receivedPayloadBytes != doipHeaderAction.payloadLength) {
+                closeSocket();
+                return 0;
+            }
+            std::cout << "DoIP message completely received" << std::endl;
+        }
+
         //if alive check timouts should be possible, reset timer when message received
         if(aliveCheckTimer.active) {
             aliveCheckTimer.resetTimer();
         }
-    
-        int sentBytes = reactOnReceivedTcpMessage(readBytes);
+
+        int sentBytes = reactOnReceivedTcpMessage(doipHeaderAction, doipHeaderAction.payloadLength, payload);
         
         return sentBytes;
     } else {
@@ -44,16 +61,39 @@ int DoIPConnection::receiveTcpMessage() {
       
 }
 
+/**
+ * Receive exactly payloadLength bytes from the TCP stream and put them into receivedData.
+ * The method blocks until receivedData bytes are received or the socket is closed.
+ * 
+ * The parameter receivedData needs to point to a readily allocated array with
+ * at least payloadLength items.
+ * 
+ * @return number of bytes received
+*/
+unsigned long DoIPConnection::receiveFixedNumberOfBytesFromTCP(unsigned long payloadLength, unsigned char *receivedData) {
+    unsigned long payloadPos = 0;
+    unsigned long remainingPayload = payloadLength;
+
+    while(remainingPayload > 0) {
+        int readBytes = recv(tcpSocket, &receivedData[payloadPos], remainingPayload, 0);
+        if(readBytes <= 0) {
+            return payloadPos;
+        }
+        payloadPos += readBytes;
+        remainingPayload -= readBytes;
+    }
+
+    return payloadPos;
+}
+
 /*
  * Receives a message from the client and determine how to process the message
  * @return      amount of bytes which were send back to client
  *              or -1 if error occurred     
  */
-int DoIPConnection::reactOnReceivedTcpMessage(int readBytes){
+int DoIPConnection::reactOnReceivedTcpMessage(GenericHeaderAction action, unsigned long payloadLength, unsigned char *payload) {
 
-    dataLength = readBytes;
-    GenericHeaderAction action = parseGenericHeader(data, readBytes);
-
+    std::cout << "processing DoIP message..." << std::endl;
     int sentBytes;
     switch(action.type) {
         case PayloadType::NEGATIVEACK: {
@@ -71,21 +111,20 @@ int DoIPConnection::reactOnReceivedTcpMessage(int readBytes){
 
         case PayloadType::ROUTINGACTIVATIONREQUEST: {
             //start routing activation handler with the received message
-            unsigned char result = parseRoutingActivation(data);
-            unsigned char clientAddress [2] = {data[8], data[9]};
+            unsigned char result = parseRoutingActivation(payload);
+            unsigned char clientAddress [2] = {payload[0], payload[1]};
 
             unsigned char* message = createRoutingActivationResponse(logicalGatewayAddress, clientAddress, result);
             sentBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
 
-            if(result == _UnknownSourceAddressCode || 
-                    result == _UnsupportedRoutingTypeCode) {
+            if(result == _UnknownSourceAddressCode || result == _UnsupportedRoutingTypeCode) {
                 closeSocket();
                 return -1;
             } else {
                 //Routing Activation Request was successfull, save address of the client
                 routedClientAddress = new unsigned char[2];
-                routedClientAddress[0] = data[8];
-                routedClientAddress[1] = data[9];
+                routedClientAddress[0] = payload[0];
+                routedClientAddress[1] = payload[1];
 
                 //start alive check timer
                 if(!aliveCheckTimer.active) {
@@ -104,12 +143,12 @@ int DoIPConnection::reactOnReceivedTcpMessage(int readBytes){
         case PayloadType::DIAGNOSTICMESSAGE: {
 
             unsigned short target_address = 0;
-            target_address |= ((unsigned short)data[10]) << 8U;
-            target_address |= (unsigned short)data[11];
+            target_address |= ((unsigned short)payload[2]) << 8U;
+            target_address |= (unsigned short)payload[3];
             bool ack = notify_application(target_address);
 
             if(ack)
-                parseDiagnosticMessage(diag_callback, routedClientAddress, data, readBytes - _GenericHeaderLength);
+                parseDiagnosticMessage(diag_callback, routedClientAddress, payload, payloadLength);
 
             break;
         }
@@ -168,23 +207,6 @@ void DoIPConnection::sendDiagnosticPayload(unsigned short sourceAddress, unsigne
     
     unsigned char* message = createDiagnosticMessage(sourceAddress, routedClientAddress, data, length);  
     sendMessage(message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + length);
-}
-
-
-/*
- * Getter to the last received data
- * @return  pointer to the received data array
- */
-const unsigned char* DoIPConnection::getData() {
-    return data;
-}
-
-/*
- * Getter to the length of the last received data
- * @return  length of received data
- */
-int DoIPConnection::getDataLength() const {
-    return dataLength;
 }
 
 /*

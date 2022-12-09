@@ -25,6 +25,7 @@ enum PayloadType {
 struct GenericHeaderAction {
     PayloadType type;
     unsigned char value;
+    unsigned long payloadLength;
 };
 
 GenericHeaderAction parseGenericHeader(unsigned char* data, int dataLenght);
