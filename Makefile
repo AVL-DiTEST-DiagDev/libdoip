@@ -8,6 +8,7 @@ SRCPATH = src
 INCPATH = include
 BUILDPATH = build
 TESTPATH = test
+EXAMPLEPATH = examples
 
 COMMONTARGET = libdoipcommon
 SERVERTARGET = libdoipserver
@@ -27,15 +28,17 @@ COMMONOBJS = $(patsubst $(COMMONTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(CO
 SERVEROBJS = $(patsubst $(SERVERTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(SERVERSOURCE))
 CLIENTOBJS = $(patsubst $(CLIENTTARGET)/$(SRCPATH)/%.cpp, $(BUILDPATH)/%.o, $(CLIENTSOURCE))
 
+EXAMPLESERVERSOURCE = $(EXAMPLEPATH)/exampleDoIPServer.cpp
+
 .PHONY: all clean
 
-all: env $(BUILDPATH)/$(COMMONTARGET).so $(BUILDPATH)/$(SERVERTARGET).so $(BUILDPATH)/$(CLIENTTARGET).so test
+all: env $(BUILDPATH)/$(COMMONTARGET).so $(BUILDPATH)/$(SERVERTARGET).so $(BUILDPATH)/$(CLIENTTARGET).so test examples
 
 env:
 	mkdir -p $(BUILDPATH)
 
 clean:
-	rm -rf $(BUILDPATH)/*.*    
+	rm -rf $(BUILDPATH)/* 
 
 $(BUILDPATH)/%.o: $(COMMONTARGET)/$(SRCPATH)/%.cpp
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -fPIC -c $< -o $@
@@ -58,6 +61,11 @@ $(BUILDPATH)/$(CLIENTTARGET).so: $(CLIENTOBJS)
 test:
 	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -I $(SERVERTARGET)/$(INCPATH) -I $(CLIENTTARGET)/$(INCPATH) $(COMMONSOURCE) $(SERVERSOURCE) $(CLIENTSOURCE) -o runTest $(TESTSOURCE) $(TESTFLAGS) 
 	
+examples: $(BUILDPATH)/exampleDoIPServer
+
+$(BUILDPATH)/exampleDoIPServer: $(EXAMPLESERVERSOURCE)
+	$(CXX) $(CPPFLAGS) -I $(COMMONTARGET)/$(INCPATH) -I $(SERVERTARGET)/$(INCPATH) -o $@ $^ -ldoipserver -ldoipcommon -lpthread -L$(BUILDPATH)
+
 install:
 	install -d /usr/lib/libdoip
 	install -d /usr/lib/libdoip/include

@@ -3,7 +3,7 @@
 
 
 
-unsigned char* createVehicleIdentificationResponse(std::string VIN,unsigned char* LogicalAddress, 
+unsigned char* createVehicleIdentificationResponse(std::string VIN,unsigned short LogicalAddress, 
                                                     unsigned char* EID, unsigned char* GID,
                                                     unsigned char FurtherActionReq) //also used für the Vehicle Announcement
 {
@@ -18,13 +18,8 @@ unsigned char* createVehicleIdentificationResponse(std::string VIN,unsigned char
     }
     
     //Logical Adress
-    j = 0;
-    for(int i = 25; i <= 26; i++)
-    {
-        message[i] = LogicalAddress[j];
-        j++;
-    }
-    
+    message[25] = (LogicalAddress >> 8) & 0xFF;
+    message[26] = LogicalAddress & 0xFF;    
     
     //EID
     j = 0;

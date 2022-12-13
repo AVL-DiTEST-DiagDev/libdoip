@@ -19,6 +19,9 @@ public:
     bool active = false;
     bool timeout = false;
     CloseConnectionCallback cb;
+    
+    ~AliveCheckTimer();
+    
 private:
     std::vector<std::thread> timerThreads;
     void waitForResponse();

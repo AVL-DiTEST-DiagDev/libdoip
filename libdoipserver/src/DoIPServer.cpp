@@ -16,15 +16,16 @@ void DoIPServer::setupTcpSocket() {
 }
 
 /*
- *  Listen till a client attempts a connection and accepts it
+ *  Wait till a client attempts a connection and accepts it
  */
-void DoIPServer::listenTcpConnection() {
+std::unique_ptr<DoIPConnection> DoIPServer::waitForTcpConnection() {
     //waits till client approach to make connection
     listen(server_socket_tcp, 5);                                                          
-    client_socket_tcp = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);
+    int tcpSocket = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);
+    return std::unique_ptr<DoIPConnection>(new DoIPConnection(tcpSocket, LogicalGatewayAddress));
 }
 
-void DoIPServer::setupUdpSocket(){
+void DoIPServer::setupUdpSocket() {
     
     server_socket_udp = socket(AF_INET, SOCK_DGRAM, 0);
     
@@ -42,153 +43,16 @@ void DoIPServer::setupUdpSocket(){
     setMulticastGroup("224.0.0.2");
 }
 
-/**
- * Closes the connection by closing the sockets
- */
-void DoIPServer::aliveCheckTimeout() {
-    std::cout << "Alive Check Timeout. Close Connection" << std::endl;
-    closeSocket();
-    closeUdpSocket();
-    close_connection();
-}
-
 /*
  * Closes the socket for this server
  */
-void DoIPServer::closeSocket() {
+void DoIPServer::closeTcpSocket() {
     close(server_socket_tcp);
-    close(client_socket_tcp);
 }
 
 void DoIPServer::closeUdpSocket() {
     close(server_socket_udp);
 }
-
-
-void DoIPServer::triggerDisconnection() {
-    
-    bool socketsClosed = false;
-    
-    std::cout << "Disconnecting Client from Server" << std::endl;
-    
-    while(socketsClosed == false)
-    {
-        int tcpSenderClosed = close(client_socket_tcp);
-        
-        if(tcpSenderClosed == 0)
-        {
-            socketsClosed = true;
-            
-            std::cout << "Connecting to the Client" << std::endl;
-            
-            client_socket_tcp = accept(server_socket_tcp, (struct sockaddr*) NULL, NULL);      
-        }
-        else
-        {
-            std::cout << "Disconnecting failed. Try Again" << std::endl;
-        }
-    }
-}
-
-/*
- * Receives a message from the client and calls reactToReceivedTcpMessage method
- * @return      amount of bytes which were send back to client
- *              or -1 if error occurred     
- */
-int DoIPServer::receiveTcpMessage() {
-
-    int readedBytes = recv(client_socket_tcp, data, _MaxDataSize, 0);
-
-    if(readedBytes > 0 && !aliveCheckTimer.timeout) {        
-        //if alive check timouts should be possible, reset timer when message received
-        if(aliveCheckTimer.active) {
-            aliveCheckTimer.resetTimer();
-        }
-    
-        int sendedBytes = reactToReceivedTcpMessage(readedBytes);
-        
-        return sendedBytes;
-    }
-    return -1;
-      
-}
-
-/*
- * Receives a message from the client and determine how to process the message
- * @return      amount of bytes which were send back to client
- *              or -1 if error occurred     
- */
-int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
-
-    dataLength = readedBytes;
-    GenericHeaderAction action = parseGenericHeader(data, readedBytes);
-
-    int sendedBytes;
-    switch(action.type) {
-        case PayloadType::NEGATIVEACK: {
-            //send NACK
-            sendedBytes = sendNegativeAck(action.value);
-
-            if(action.value == _IncorrectPatternFormatCode || 
-                    action.value == _InvalidPayloadLengthCode) {
-                closeSocket();
-                return -1;
-            }
-
-            return sendedBytes;
-        }
-
-        case PayloadType::ROUTINGACTIVATIONREQUEST: {
-            //start routing activation handler with the received message
-            unsigned char result = parseRoutingActivation(data);
-            unsigned char clientAddress [2] = {data[8], data[9]};
-
-            unsigned char* message = createRoutingActivationResponse(clientAddress, result);
-            sendedBytes = sendMessage(message, _GenericHeaderLength + _ActivationResponseLength);
-
-            if(result == _UnknownSourceAddressCode || 
-                    result == _UnsupportedRoutingTypeCode) {
-                closeSocket();
-                return -1;
-            } else {
-                //Routing Activation Request was successfull, save address of the client
-                routedClientAddress = new unsigned char[2];
-                routedClientAddress[0] = data[8];
-                routedClientAddress[1] = data[9];
-
-                //start alive check timer
-                if(!aliveCheckTimer.active) {
-                    aliveCheckTimer.cb = std::bind(&DoIPServer::aliveCheckTimeout,this);
-                    aliveCheckTimer.startTimer();
-                }
-            }
-
-            return sendedBytes;
-        }
-
-        case PayloadType::ALIVECHECKRESPONSE: {
-            return 0;
-        }
-
-        case PayloadType::DIAGNOSTICMESSAGE: {
-
-            unsigned char target_address [2] = {data[10], data[11]};           
-            bool ack = notify_application(target_address);
-
-            if(ack)
-                parseDiagnosticMessage(diag_callback, routedClientAddress, data, readedBytes - _GenericHeaderLength);
-
-            break;
-        }
-
-        default: {
-            std::cerr << "not handled payload type occured in receiveMessage()" << std::endl;
-            return -1;
-        }
-    }  
-    return -1;
-}
-
 
 /*
  * Receives a udp message and calls reactToReceivedUdpMessage method
@@ -197,17 +61,12 @@ int DoIPServer::reactToReceivedTcpMessage(int readedBytes){
  */
 int DoIPServer::receiveUdpMessage(){
     
-
     unsigned int length = sizeof(serverAddress);   
-    int readedBytes = recvfrom(server_socket_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
+    int readBytes = recvfrom(server_socket_udp, data, _MaxDataSize, 0, (struct sockaddr *) &serverAddress, &length);
         
-    if(readedBytes > 0 && !aliveCheckTimer.timeout) {
+    int sentBytes = reactToReceivedUdpMessage(readBytes);
     
-        int sendedBytes = reactToReceivedUdpMessage(readedBytes);
-    
-        return sendedBytes;
-    }
-    return -1;
+    return sentBytes;
 }
 
 
@@ -218,7 +77,6 @@ int DoIPServer::receiveUdpMessage(){
  */
 int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
         
-    dataLength = readedBytes;
     GenericHeaderAction action = parseGenericHeader(data, readedBytes);
 
     int sendedBytes;
@@ -236,7 +94,6 @@ int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
 
             if(action.value == _IncorrectPatternFormatCode || 
                     action.value == _InvalidPayloadLengthCode) {
-                closeSocket();
                 return -1;
             } else {
                 //discard message when value 0x01, 0x02, 0x03
@@ -245,7 +102,7 @@ int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
         }
 
         case PayloadType::VEHICLEIDENTREQUEST: {
-            unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
+            unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalGatewayAddress, EID, GID, FurtherActionReq);
             sendedBytes = sendUdpMessage(message, _GenericHeaderLength + _VIResponseLength);   
 
             return sendedBytes;
@@ -259,20 +116,6 @@ int DoIPServer::reactToReceivedUdpMessage(int readedBytes) {
     return -1;
 }
 
-
-/**
- * Sends a message back to the connected client
- * @param message           contains generic header and payload specific content
- * @param messageLength     length of the complete message
- * @return                  number of bytes written is returned,
- *                          or -1 if error occurred
- */
-int DoIPServer::sendMessage(unsigned char* message, int messageLength) {
-    int result = write(client_socket_tcp, message, messageLength);
-    return result;
-}
-
-
 int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //sendUdpMessage after receiving a message from the client
     //if the server receives a message from a client, than the response should be send back to the client address and port
     clientAddress.sin_port = serverAddress.sin_port;
@@ -280,19 +123,6 @@ int DoIPServer::sendUdpMessage(unsigned char* message, int messageLength)  { //s
     
     int result = sendto(server_socket_udp, message, messageLength, 0, (struct sockaddr *)&clientAddress, sizeof(clientAddress));
     return result;
-}
-
-/**
- * Sets the time in seconds after which a alive check timeout occurs.
- * Alive check timeouts can be deactivated when setting the seconds to 0
- * @param seconds   time after which alive check timeout occurs
- */
-void DoIPServer::setGeneralInactivityTime(uint16_t seconds) {
-    if(seconds > 0) {
-        aliveCheckTimer.setTimer(seconds);
-    } else {
-        aliveCheckTimer.disabled = true;
-    }
 }
 
 void DoIPServer::setEIDdefault(){
@@ -328,9 +158,8 @@ void DoIPServer::setVIN( std::string VINString){
     VIN = VINString;
 }
 
-void DoIPServer::setLogicalAddress(const unsigned int inputLogAdd){
-    LogicalAddress[0] = (inputLogAdd >> 8) & 0xFF;
-    LogicalAddress[1] = inputLogAdd & 0xFF;
+void DoIPServer::setLogicalGatewayAddress(const unsigned short inputLogAdd){
+    LogicalGatewayAddress = inputLogAdd;
 }
 
 void DoIPServer::setEID(const uint64_t inputEID){
@@ -363,38 +192,7 @@ void DoIPServer::setA_DoIP_Announce_Interval(int Interval){
     A_DoIP_Announce_Interval = Interval;
 }
 
-/*
- * Receive diagnostic message payload from the server application, which will be sended back to the client
- * @param value     received payload
- * @param length    length of received payload
- */
-void DoIPServer::receiveDiagnosticPayload(unsigned char* address, unsigned char* data, int length) {
 
-    printf("DoiPServer received from server application: ");
-    for(int i = 0; i < length; i++) {
-        printf("0x%x ", data[i]);    
-    }
-    printf("\n");
-    
-    unsigned char* message = createDiagnosticMessage(address, routedClientAddress, data, length);  
-    sendMessage(message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + length);
-}
-
-/*
- * Getter to the last received data
- * @return  pointer to the received data array
- */
-const unsigned char* DoIPServer::getData() {
-    return data;
-}
-
-/*
- * Getter to the length of the last received data
- * @return  length of received data
- */
-int DoIPServer::getDataLength() const {
-    return dataLength;
-}
 
 void DoIPServer::setMulticastGroup(const char* address) {
     
@@ -423,37 +221,6 @@ void DoIPServer::setMulticastGroup(const char* address) {
     }
 }
 
-/*
- * Set the callback function for this doip server instance
- * @dc      Callback which sends the data of a diagnostic message to the application
- * @dmn     Callback which notifies the application of receiving a diagnostic message
- * @ccb     Callback for application function when the library closes the connection
- */
-void DoIPServer::setCallback(DiagnosticCallback dc, DiagnosticMessageNotification dmn, CloseConnectionCallback ccb) {
-    diag_callback = dc;
-    notify_application = dmn;
-    close_connection = ccb;
-}
-
-void DoIPServer::sendDiagnosticAck(bool ackType, unsigned char ackCode) {
-    unsigned char data_TA [2] = { routedClientAddress[0], routedClientAddress[1] };
-    unsigned char data_SA [2] = { LogicalAddress[0], LogicalAddress[1] };
-    
-    unsigned char* message = createDiagnosticACK(ackType, data_SA, data_TA, ackCode);
-    sendMessage(message, _GenericHeaderLength + _DiagnosticPositiveACKLength);
-}
-
-/**
- * Prepares a generic header nack and sends it to the client
- * @param ackCode       NACK-Code which will be included in the message
- * @return              amount of bytes sended to the client
- */
-int DoIPServer::sendNegativeAck(unsigned char ackCode) {
-    unsigned char* message = createGenericHeader(PayloadType::NEGATIVEACK, _NACKLength);
-    message[8] = ackCode;
-    int sendedBytes = sendMessage(message, _GenericHeaderLength + _NACKLength);
-    return sendedBytes;
-}
 
 int DoIPServer::sendVehicleAnnouncement() {
     
@@ -479,7 +246,7 @@ int DoIPServer::sendVehicleAnnouncement() {
     
     int sendedmessage;
     
-    unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalAddress, EID, GID, FurtherActionReq);
+    unsigned char* message = createVehicleIdentificationResponse(VIN, LogicalGatewayAddress, EID, GID, FurtherActionReq);
     
     for(int i = 0; i < A_DoIP_Announce_Num; i++)
     {

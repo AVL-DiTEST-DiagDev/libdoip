@@ -116,7 +116,7 @@ void DoIPClient::sendRoutingActivationRequest() {
  * @param userDataLength    length of userData
  */
 void DoIPClient::sendDiagnosticMessage(unsigned char* targetAddress, unsigned char* userData, int userDataLength) {
-    unsigned char sourceAddress [2] = {0x0E,0x00};
+    unsigned short sourceAddress = 0x0E00;
     unsigned char* message = createDiagnosticMessage(sourceAddress, targetAddress, userData, userDataLength);
 
     write(_sockFd, message, _GenericHeaderLength + _DiagnosticMessageMinimumLength + userDataLength);

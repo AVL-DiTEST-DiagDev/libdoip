@@ -12,7 +12,8 @@ const unsigned char _UnsupportedRoutingTypeCode = 0x06;
 const unsigned char _SuccessfullyRoutedCode = 0x10;
 
 unsigned char parseRoutingActivation(unsigned char* data);
-unsigned char* createRoutingActivationResponse(unsigned char clientAddress[2],
+unsigned char* createRoutingActivationResponse(unsigned short sourceAddress, 
+                                                unsigned char clientAddress[2],
                                                 unsigned char responseCode);
 bool checkSourceAddress(uint32_t address);
 
