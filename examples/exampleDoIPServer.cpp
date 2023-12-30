@@ -97,7 +97,8 @@ void listenTcp() {
 }
 
 void ConfigureDoipServer() {
-
+    // VIN needs to have a fixed length of 17 bytes.
+    // Shorter VINs will be padded with '0'
     server.setVIN("FOOBAR");
     server.setLogicalGatewayAddress(LOGICAL_ADDRESS);
     server.setGID(0);

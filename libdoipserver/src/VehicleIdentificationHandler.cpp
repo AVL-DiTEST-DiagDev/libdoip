@@ -15,8 +15,8 @@ unsigned char* createVehicleIdentificationResponse(std::string VIN,unsigned shor
             message[i] = (unsigned char)VIN[j];
             j++;
 	} else {
-	    //Pad with zero if VIN is shorter than 16 bytes
-	    message[i] = 0;
+	    //Pad with ASCII '0' if VIN is shorter than 17 bytes
+	    message[i] = (unsigned char)'0';
 	}
     }
     
