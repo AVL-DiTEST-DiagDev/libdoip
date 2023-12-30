@@ -25,6 +25,10 @@ class RoutingActivationTest : public ::testing::Test {
 			request[13] = 0x00;
 			request[14] = 0x00;
 		}
+
+		void TearDown() override {
+			delete[] request;
+		}
 };
 
 /*
