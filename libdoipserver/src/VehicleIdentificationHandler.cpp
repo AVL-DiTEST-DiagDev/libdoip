@@ -1,8 +1,6 @@
 #include "VehicleIdentificationHandler.h"
 #include <iostream>
 
-
-
 unsigned char* createVehicleIdentificationResponse(std::string VIN,unsigned short LogicalAddress, 
                                                     unsigned char* EID, unsigned char* GID,
                                                     unsigned char FurtherActionReq) //also used für the Vehicle Announcement
@@ -10,11 +8,16 @@ unsigned char* createVehicleIdentificationResponse(std::string VIN,unsigned shor
     unsigned char* message = createGenericHeader(PayloadType::VEHICLEIDENTRESPONSE, _VIResponseLength);
     
     //VIN Number 
-    int j = 0;
+    unsigned int j = 0;
     for(int i = 8; i <= 24; i++)
-    {      
-        message[i] = (unsigned char)VIN[j];
-        j++;
+    {
+        if (j < VIN.length()){
+            message[i] = (unsigned char)VIN[j];
+            j++;
+	} else {
+	    //Pad with ASCII '0' if VIN is shorter than 17 bytes
+	    message[i] = (unsigned char)'0';
+	}
     }
     
     //Logical Adress

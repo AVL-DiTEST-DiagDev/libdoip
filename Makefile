@@ -1,6 +1,6 @@
 CXX = g++
 
-CPPFLAGS = -g -Wall -Wextra -std=c++11
+CPPFLAGS = -g -Wall -Wextra -std=c++11 -fsanitize=address
 LDFLAGS = -shared
 TESTFLAGS = -g -L/usr/lib -lgtest -lgtest_main -lpthread
 
